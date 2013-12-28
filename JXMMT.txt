@@ -1,0 +1,1069 @@
+//Copyright+LGPL
+
+//-----------------------------------------------------------------------------------------------------------------------------------------------
+// Copyright 2000-2013 Makoto Mori, Nobuyuki Oba
+//-----------------------------------------------------------------------------------------------------------------------------------------------
+// This file is part of MMTTY.
+
+// MMTTY is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License
+// as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+
+// MMTTY is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of 
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more details.
+
+// You should have received a copy of the GNU Lesser General Public License along with MMTTY.  If not, see 
+// <http://www.gnu.org/licenses/>.
+//-----------------------------------------------------------------------------------------------------------------------------------------------
+
+「ActiveXコントロール XMMT.ocx」
+							初版 2003.01.30 JE3HHT 森   誠
+							改定 2010.09.21 JE3HHT 森   誠
+
+
+  本書はActiveXコントロール XMMT.ocxについて解説します。
+
+
+目次
+~~~~
+	◎改定履歴
+	◎XMMT.ocxの概要
+	◎XMMTコントロールについて
+	◎XMMTコントロールのプロパティ
+	◎XMMTコントロールのメソッド
+	◎XMMTコントロールのイベント
+	◎XMMTコントロール用の定義済の定数
+	◎XMMRコントロールについて
+	◎XMMRコントロールのプロパティ
+	◎XMMRコントロールのメソッド
+	◎XMMRコントロールのイベント
+	◎複数のXMMRコントロール
+	◎XMMRコントロール用の定義済の定数
+	◎最後に
+
+==========
+◎改定履歴
+==========
+- 2010.09.21 Ver1.02
+XMMR : MMTTYの起動オプション(-Cxxx, -Txxx)に対応
+XMMR : MMTTYの起動監視タイムアウトを7秒から15秒に変更
+
+- 2003.02.15 Ver1.01
+XMMT : PostMmttyMessageAsStringメソッドの追加
+XMMT : OnGetProfileNameイベントの追加
+XMMT : 定義済定数にMMTMSG_SETRESO, MMTMSG_SETLPF, MMTMSG_GETPROFILENAME, MMTMSG_LOADPROFILE, MMTMSG_SAVEPROFILEを追加
+
+
+================
+◎XMMT.ocxの概要
+================
+  XMMT.ocxはVB6で利用することを想定したOLEカスタムコントロールです。XMMT.ocxを利用するとMMTTYと通信するホストアプリケーションの開発時間を大幅に短縮できます。XMMT.ocxには以下の７つのコントロールが含まれます。
+
+	XMMT		カスタムTNCエミュレーションTClient.mmtとの通信処理がカプセル化されます。
+	XMMR		MMTTYリモートモードとの通信処理がカプセル化されます。
+	XMMLvl		レベルインディケータコントロール
+	XMMSpec		スペクトラムコントロール
+	XMMWater	ウォーターフォールコントロール
+	XMMXY		XYスコープコントロール
+	XMMBtn		トグルボタンコントロール
+
+  XMMTコントロールとXMMRコントロール以外はおまけです。これらおまけについては本書では解説しませんが、付属のテスト用のコンテナXmmtContainerとXmmrContainer, XmmrTwoContainerに簡単な使用例を示しました。
+
+  アプリケーションがXMMT.ocx内に含まれるいずれかのコントロールを利用する場合、XMMT.ocxをその配布パッケージに含めてください。通常アプリケーションのカレントフォルダにXMMT.ocxをコピーすると良いでしょう。テストコンテナのソースをVB6で開く場合も、XMMT.ocxをソースフォルダにコピーしておきます。
+
+  XMMT.ocxは以下のプラットフォームのWindowsで使用できます。
+	Windows95, 98, 98SE, ME
+	WindowsNT, 2000, XP
+
+
+==========================
+◎XMMTコントロールについて
+==========================
+  XMMTコントロールにはMMTTYのカスタムTNCエミュレーションのサンプルTClient.mmtとの通信処理がすべてカプセル化されています。
+
+		XMMT <---(LAN)---> TClinet.mmt <-------> MMTTY (custom TNC emulation)
+
+	- Windowsソケット処理を行い、最大８クライアント(MMTTY)の接続を受付けます。
+	- CCustomSessionクラスによるプロトコル伝送によりMMTTYのメッセージと通知関数を処理できます。
+
+*MMTTYカスタムTNCエミュレーションについては、カスタムTNCエミュレーションドキュメント(JMMT.txt, EMMT.txt)を参照して下さい。
+
+
+==============================
+◎XMMTコントロールのプロパティ
+==============================
+
+short wPortTcp
+~~~~~~~~~~~~~~
+  TCPのポート番号です。デフォルトは10301です。この値を変更する場合はクライアントのTClient.iniも変更しなければなりません。
+
+BOOL bActive
+~~~~~~~~~~~~
+  Trueを設定するとXMMTをアクティブにします(Listen()メソッドを呼び出すのと同じです)。
+[例]
+Private Sub Form_Load()
+    XMMT.bActive = True
+End Sub
+
+short wMaxCount (Read only)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  接続可能なクライアントの数を表します（値は常に８です）。
+
+short wCount (Read only)
+~~~~~~~~~~~~~~~~~~~~~~~~
+  現在接続されているクライアントの数を表します。
+
+BOOL bFftConversion
+~~~~~~~~~~~~~~~~~~~
+  OnNotifyFFTで通知されるFFTデータを周波数変換するかどうかを設定します。TRUEを設定するとデータのサンプリング周波数と点数は、常に8000Hzの2048点に固定されます。
+
+BSTR HostName(Read only)
+~~~~~~~~~~~~~~~~~~~~~~~~
+  コンピュータの名前を表します。
+
+
+============================
+◎XMMTコントロールのメソッド
+============================
+BSTR GetAddress(short nIndex)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[引数]
+  nIndex : クライアントを識別するインデックス(0～7)
+[戻り値]
+  クライアントのアドレスを表す文字列
+[解説]
+  接続中のクライアントのアドレスを文字列で返します。接続していない場合"Unknown"を返します。
+
+
+BOOL Listen()
+~~~~~~~~~~~~~
+[戻り値]
+  TRUE 成功,  FALSE 失敗
+[解説]
+  wPortTcpのポート番号でソケットをリスニング状態にします。クライアントから接続されるとOnConncectedイベントが発生します。既に同じポート番号でリスニングしているソケットがシステムに存在するとFALSEを返します。
+
+
+BOOL IsConnected(short nIndex)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[引数]
+  nIndex : クライアントを識別するインデックス(0～7)
+[戻り値]
+  TRUE 接続中,  FALSE 切断中
+[解説]
+  インデックスで指定したクライアントの接続状態を返します。
+
+
+BOOL SendChar(short nIndex, short bChar)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[引数]
+  nIndex : クライアントを識別するインデックス(0～7)
+  bChar  : 文字コード(0～239)
+[戻り値]
+  TRUE 成功,  FALSE 失敗
+[解説]
+  インデックスで指定したクライアントに文字を送ります。TNC共通コマンドを送る場合はSendCodeを使います。
+[例]
+  r = XMMT.SendChar(0, 65)
+
+
+BOOL SendString(short nIndex, LPCTSTR pStr, short nLen) 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[引数]
+  nIndex : クライアントを識別するインデックス(0～7)
+  pStr   : 文字列
+  nLen   : 文字数(0を指定するとpStrの最後まで送信します)
+[戻り値]
+  TRUE 成功,  FALSE 失敗
+[解説]
+  インデックスで指定したクライアントに文字列を送ります。TNC共通コマンドを送る場合はSendCodeを使います。
+[例]
+  この例では文字列"MAIDO"が送信された後に受信に戻ります。
+  r = XMMT.SendString(0, "MAIDO", 0)
+  r = XMMT.SendCode(0, TNC_PTTON)
+  r = XMMT.SendCode(0, TNC_PTTFLUSH)
+
+
+BOOL SendCode(short nIndex, short bCode)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[引数]
+  nIndex : クライアントを識別するインデックス(0～7)
+  bCode  : 文字コード(0～254)
+[戻り値]
+  TRUE 成功,  FALSE 失敗
+[解説]
+  インデックスで指定したクライアントにTNC共通コマンドを含む文字を送ります。ただし文字コード255はCCustomSessionプロトコルで使用されるために送ることができません。
+[例]
+  r = XMMT.SendCode(0, TNC_PTTOFF)
+
+
+BOOL IsBusy(short nIndex)
+~~~~~~~~~~~~~~~~~~~~~~~~~
+[引数]
+  nIndex : クライアントを識別するインデックス(0～7)
+[戻り値]
+  TRUE Busy状態,  FALSE Ready状態
+[解説]
+  インデックスで指定したクライアントのBusy/Ready状態を返します。ファイル送信のような大量のデータをMMTTYに伝送する場合、このメソッドを呼び出して送信可能かどうかをチェックしなければなりません。
+
+
+SetBusy(short nIndex, short bBusy)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[引数]
+  nIndex : クライアントを識別するインデックス(0～7)
+  bBusy  : TRUE Busy状態,  FALSE Ready状態
+[解説]
+  指定したクライアントのBusy/Ready状態を変更します。通常このメソッドをアプリケーションで使用する必要はありません。
+
+
+BOOL PostMmttyMessage(short nIndex, long wParam, long lParam)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[引数]
+  nIndex : クライアントを識別するインデックス(0～7)
+  wParam : メッセージの第1パラメータ
+  lParam : メッセージの第2パラメータ
+[戻り値]
+  TRUE 成功,  FALSE 失敗
+[解説]
+  インデックスで指定したクライアントにメッセージを送ります。このメソッドでメッセージを送った場合、MMTTYからのメッセージの返答は返りません。
+[例]
+  r = XMMT.PostMmttyMessage(0, MMTMSG_SETSQ, 700)
+
+
+BOOL SendMmttyMessage(short nIndex, long wParam, long lParam)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[引数]
+  nIndex : クライアントを識別するインデックス(0～7)
+  wParam : メッセージの第1パラメータ
+  lParam : メッセージの第2パラメータ
+[戻り値]
+  TRUE 成功,  FALSE 失敗
+[解説]
+  インデックスで指定したクライアントにメッセージを送ります。このメソッドでメッセージを送った場合、MMTTYからのメッセージの返答がOnMessageResultイベントで返ります。
+[例]
+  r = XMMT.SendMmttyMessage(0, MMTMSG_CHAR, 65)
+
+
+BOOL WriteMmttyTxw(short nIndex, LPCTSTR pStr)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[引数]
+  nIndex : クライアントを識別するインデックス(0～7)
+  pStr   : 文字列
+[戻り値]
+  TRUE 成功,  FALSE 失敗
+[解説]
+  インデックスで指定したクライアントの送信ウインドウに文字列を送ります。MMTMSG_WRITETXWメッセージを送る場合はこのメソッドを使用して下さい。PostMmttyMessageまたはSendMmttyMessageでMMTMSG_WRITETXWメッセージを送るとlParamがポインタ渡しなので失敗します。
+[例]
+  r = XMMT.WriteMmttyTxw(0, "OIDO")
+
+
+BOOL PostMmttyMessageAsString(short nIndex, long wParam, LPCTSTR pStr)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[引数]
+  nIndex : クライアントを識別するインデックス(0～7)
+  wParam : メッセージの第1パラメータ
+  pStr   : lParamで引き渡す文字列
+[戻り値]
+  TRUE 成功,  FALSE 失敗
+[解説]
+  インデックスで指定したクライアントに文字列メッセージを送ります。pStrはMMTTYに引き渡される時にlParamの文字列ポインタに変換されます。このメソッドはMMTMSG_WRITETXWおよびMMTMSG_SAVEPROFILEメッセージを送る場合に使用することができます。MMTTYからの返答は返りません。
+[例]
+  r = XMMT.PostMmttyMessageAsString(0, MMTMSG_SAVEPROFILE, "0,My standard settings")
+
+
+BOOL SetNotify(short nIndex, short bNotify)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[引数]
+  nIndex : クライアントを識別するインデックス(0～7)
+  bNotify: b0-mmtNotify, b1-mmtNotifyFFT, b2-mmtNotifyXY
+[戻り値]
+  TRUE 成功,  FALSE 失敗
+[解説]
+  インデックスで指定したクライアントからの通知関数のイベントを処理するかどうかを設定します。接続直後はすべての通知関数イベントは発生しない状態になっています。
+[例]
+  r = XMMT.SetNotify(0, ntNOTIFY + ntNOTIFYFFT + ntNOTIFYXY)
+[参考]
+  mmtNotifyFFTとmmtNotifyXYはいずれも1回に4096Byte程度のデータ伝送を行います。クライアントが複数接続されている状態では、それらすべてのクライアントからの通知を許可するとネットワークの負荷が大きくなります。複数のクライアントをサポートする場合は、スペクトラムとXYスコープの表示は、カレントのクライアントのデータだけを表示するようなユーザーインターフェースにし、SetNotifyメソッドで各クライアントのFFTとXYデータの通知のON/OFFを切り替えて使用する事をお勧めします。
+
+
+Disconnect(short nIndex)
+~~~~~~~~~~~~~~~~~~~~~~~~
+[引数]
+  nIndex : クライアントを識別するインデックス(0～7)
+[解説]
+  インデックスで指定したクライアントとの接続を強制的に切断します。
+
+
+============================
+◎XMMTコントロールのイベント
+============================
+
+OnConnected(short nIndex)
+~~~~~~~~~~~~~~~~~~~~~~~~~
+[引数]
+  nIndex : クライアントを識別するインデックス(0～7)
+[解説]
+  クライアントと接続した時に発生します。一旦接続するとそのクライアントのインデックスは切断されるまで変更されません。インデックスは接続した順に0から割り当てられますが、例えば途中で切断されたクライアントがあると、次に接続されるクライアントはその空きのインデックス値が割り当てられます。
+
+[例]
+  通常アプリケーションはこのイベントで以下のような初期化処理を実行します。
+
+Private Sub XMMT_OnConnected(ByVal nIndex As Integer)
+    Call XMMT.SendCode(nIndex, TNC_PTTOFF)	'MMTTYのTNCを会話モードにします
+    Call XMMT.SendCode(nIndex, TNC_ECHOON)	'MMTTYのECHOをAfterSendingにします
+    Call XMMT.SetNotify(nIndex, ntNOTIFY + ntNOTIFYFFT + ntNOTIFYXY)	'処理する通知関数イベントを設定します
+End Sub
+
+
+OnDisconnected(short nIndex)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[引数]
+  nIndex : クライアントを識別するインデックス(0～7)
+[解説]
+  クライアントと切断した時に発生します。
+
+
+OnCharRcvd(short nIndex, short bChar)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[引数]
+  nIndex : クライアントを識別するインデックス(0～7)
+  bChar  : 受信文字
+[解説]
+  クライアントから文字を受信した時に発生します。
+
+
+OnPttEvent(short nIndex, short btx)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[引数]
+  nIndex : クライアントを識別するインデックス(0～7)
+  btx    : TRUE - Switch to TX,  FALSE - Switch to RX
+[解説]
+  クライアントの送信/受信状態が変更された時に発生します。
+
+
+OnBusyEvent(short nIndex, short bBusy)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[引数]
+  nIndex : クライアントを識別するインデックス(0～7)
+  bBusy  : TRUE - Busy,  FALSE - Ready
+[解説]
+  クライアントのBusy/Ready状態が変更された時に発生します。通常アプリケーションはこのイベントを処理する必要はありません。
+
+
+OnNotifyNMMT(short nIndex, LONG *pNMMT)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[引数]
+  nIndex : クライアントを識別するインデックス(0～7)
+  pNMMT  : NMMT構造体のアドレス
+[解説]
+  クライアントから通知関数mmtNotifyを受信した時に発生します。pNMMTが示す領域は一時的に確保されています。スコープ外でこのポインタを使うことはできません。
+[例]
+  NMMT構造体をVBの配列で参照できるようにするためにCopyMemory() Windows APIを使います。NMMT構造体はLONGデータの単純な集合なので、VBのLongの配列で参照できます。配列のインデックスにはxt_markfreqのような名前がXMMT.ocxで定義されています。詳細は「XMMTコントロール用の定義済の定数」を参照して下さい。
+
+Private Declare Sub CopyMemory Lib "kernel32" Alias "RtlMoveMemory" (Destination As Any, Source As Any, ByVal Length As Long)
+
+Dim m_nmmt(63, 7) As Long	'複数のクライアントと同時に通信する場合は多次元配列にします。
+
+Private Sub XMMT_OnNotifyNMMT(ByVal nIndex As Integer, pNMMT As Long)
+    Call CopyMemory(m_nmmt(0, nIndex), pNMMT, 64 * 4)	'Windows API CopyMemory()
+	|
+    MarkFreq = m_nmmt(xt_markfreq, nIndex)
+    SpaceFreq = m_nmmt(xt_spacefreq, nIndex)
+       |
+    'おまけのコントロールを使う場合はpNMMTをコントロールにそのまま引き渡します。
+    Call XMMSpec.UpdateByNMMT(pNMMT)	'XMMSpecコントロールの周波数プロパティを更新します。
+    Call XMMLvl.DrawByNMMT(pNMMT)	'レベルインディケータを描画します。
+End Sub
+
+
+OnNotifyFFT(short nIndex, short *pFFT, short size, short sampfreq)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[引数]
+  nIndex : クライアントを識別するインデックス(0～7)
+  pFFT   : FFTデータの配列のアドレス
+  size   : FFTデータの個数(最大2048)
+  sampfreq : FFTデータのサンプリング周波数(Hz)
+[解説]
+  クライアントから通知関数mmtNotifyFFTを受信した時に発生します。bFftConversionプロパティをTRUEにしておくと、常にsize=2048, sampfreq=8000になるようにデータが変換されます。pFFTが示す領域は一時的に確保されています。スコープ外でこのポインタを使うことはできません。
+[例]
+  おまけのXMMSpec, XMMWaterコントロールを使う場合は、pFFT, size, sampfreqをコントロールのDrawメソッドにそのまま引き渡します。
+
+Private Sub XMMT_OnNotifyFFT(ByVal nIndex As Integer, pFFT As Integer, ByVal size As Integer, ByVal sampfreq As Integer)
+    Call XMMSpec.Draw(pFFT, size, sampfreq)
+    Call XMMWater.Draw pFFT, size, sampfreq)
+End Sub
+
+
+  VBのコードで描画する場合は、FFTデータをVBの配列で参照できるようにするためにCopyMemory() Windows APIを使います。
+
+Private Sub XMMT_OnNotifyFFT(ByVal nIndex As Integer, pFFT As Integer, ByVal size As Integer, ByVal sampfreq As Integer)
+    Dim fft(2047) As Integer
+    Call CopyMemory(fft(0), pFFT, size * 2)	'Windows API CopyMemory()
+	|
+    'ここでスペクトラムを描画します。
+End Sub
+
+
+OnNotifyXY(short nIndex, LONG *pXY)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[引数]
+  nIndex : クライアントを識別するインデックス(0～7)
+  pXY    : XYデータの配列のアドレス
+[解説]
+  クライアントから通知関数mmtNotifyXYを受信した時に発生します。pXYが示す領域は一時的に確保されています。スコープ外でこのポインタを使うことはできません。
+[例]
+  おまけのXMMXYコントロールを使う場合は、pXYをコントロールのDrawメソッドにそのまま引き渡します。
+
+Private Sub XMMT_OnNotifyXY(ByVal nIndex As Integer, pXY As Long)
+    Call XMMXY.Draw(pXY)
+End Sub
+
+
+  VBのコードで描画する場合は、XYデータをVBの配列で参照できるようにするためにCopyMemory() Windows APIを使います。
+
+Private Sub XMMT_OnNotifyXY(ByVal nIndex As Integer, pXY As Long)
+    Dim xy(1023) As Long
+    Call CopyMemory(xy(0), pXY, 1024 * 4)		'Windows API CopyMemory()
+	|
+    'ここでXYスコープを描画します。
+End Sub
+
+
+OnMessageResult(short nIndex, LONG wParam, LONG lParam, LONG lResult)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[引数]
+  nIndex : クライアントを識別するインデックス(0～7)
+  wParam : メッセージのwParamの値
+  lParam : メッセージのlParamの値
+  lResult: メッセージの戻り値
+[解説]
+  クライアントからメッセージの戻り値を受信した時に発生します。このイベントはSendMmttyMessageメソッドでメッセージを送信した時に発生します。
+
+
+OnGetProfileName(short nIndex, short nProfile, LPCSTR pStr)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[引数]
+  nIndex : クライアントを識別するインデックス(0～7)
+  nProfile : プロファイル番号(0～7)
+  pStr : プロファイルの名前
+[解説]
+　クライアントからMMTMSG_GETPROFILENAMEメッセージの返答を受信した時に通知されます。文字列pStrはVBの文字列としてそのまま取り扱うことができます。
+[参考]
+  MMTMSG_GETPROFILENAMEはSendMmttyMessageメソッドで送らなければなりません。イベントの伝達経路は次のようになります。
+
+(XMMT)SendMmttyMessage
+	| LAN (CCustomSession)
+(TClient)SendMessage
+	|
+(MMTTY)MMTMSG_GETPROFILENAME
+	|
+(TClient)Return from MMTTY
+	| LAN (CCustomSession)
+(XMMT)OnGetProfileName
+
+[例]
+  以下にKPSというメニュー配列にプロファイルの名前を設定する例を示します。この例ではコネクト時にMMTMSG_GETPROFILENAMEを送り、すべてのプロファイルの名前を要求しています。プロファイルメニューの実装例はサンプルのXmmtContainerを参照して下さい。
+
+Private Sub XMMT_OnConnected(ByVal nIndex As Integer)
+    Dim i As Integer
+    For i = 0 To 7 Step 1
+        Call XMMT.SendMmttyMessage(nIndex, MMTMSG_GETPROFILENAME, i)
+    Next i
+End Sub
+
+Private Sub XMMT_OnGetProfileName(ByVal nIndex As Integer, ByVal nProfile As Integer, ByVal pStr As String)
+    KPS(nProfile).Caption = "&" + CStr(nProfile + 1) + ":" + pStr
+    KPS(nProfile).Enabled = Len(pStr)
+End Sub
+
+
+==================================
+◎XMMTコントロール用の定義済の定数
+==================================
+  XMMTコントロールを利用するアプリケーションはXMMT.ocxで定義されている以下の定数を利用することができます。
+
+typedef enum {		// TNC共通コマンド
+	TNC_PTTON = 0x00f0,
+	TNC_PTTOFF,
+	TNC_PTTFLUSH,
+	TNC_CLEARBUF,
+	TNC_AFCON,
+	TNC_AFCOFF,
+	TNC_NETON,
+	TNC_NETOFF,
+	TNC_REVON,
+	TNC_REVOFF,
+	TNC_HAM,
+	TNC_ECHOON,
+	TNC_ECHOOFF,
+	TNC_CANCELPTTFLUSH,
+}MMT_COM;
+typedef enum {		// MMTTYへのメッセージ
+	MMTMSG_NULL,
+	MMTMSG_CHAR,
+	MMTMSG_PTT,
+	MMTMSG_COMMON,
+	MMTMSG_CLEARFIFO,
+	MMTMSG_SETSWITCH,
+	MMTMSG_SETVIEW,
+	MMTMSG_CHARTXW,
+	MMTMSG_WRITETXW,
+	MMTMSG_SETFREQ,
+	MMTMSG_SETBAUD,
+	MMTMSG_SETSQ,
+	MMTMSG_SETNOTCH,
+	MMTMSG_SETDEFFREQ,
+	MMTMSG_SETPTTTIMER,
+	MMTMSG_SETTNCTYPE,
+	MMTMSG_SETPRIORITY,
+	MMTMSG_SETLENGTH,
+	MMTMSG_SETRESO,
+	MMTMSG_SETLPF,
+	MMTMSG_GETPROFILENAME,
+	MMTMSG_LOADPROFILE,
+	MMTMSG_SAVEPROFILE,
+}MMT_MSG;
+typedef enum {		// NMMT配列のインデックス
+	xt_markfreq,
+	xt_spacefreq,
+	xt_siglevel,
+	xt_sqlevel,
+	xt_txbuflen,
+	xt_codeswitch,
+	xt_codeview,
+	xt_notch1,
+	xt_notch2,
+	xt_baud,
+	xt_bitlength,
+	xt_txwlen,
+	xt_sampfreq,
+	xt_demfreq,
+	xt_radiofreq,
+	xt_modetnc,
+	xt_fig,
+	xt_defmark,
+	xt_defshift,
+	xt_Reserved,
+}MMT_NMMT;
+typedef enum {		// SetNotifyのフラグ
+	ntNOTIFY=1,
+	ntNOTIFYFFT=2,
+	ntNOTIFYXY=4,
+}MMT_SETNOTIFY;
+
+
+==========================
+◎XMMRコントロールについて
+==========================
+  XMMRコントロールはMMTTYのリモートモードとの通信処理をカプセル化したコントロールです。
+
+		XMMR <------> MMTTY (remote mode)
+
+  XMMRコントロールの使用方法はXMMTコントロールと大変良く似ていますが、XMMTコントロールがMMTTYからの接続を待ち受けるサーバー型なのに対し、XMMRコントロールはMMTTYへの接続を行うクライアント型です。
+  XMMRコントロールではコントロールに接続できるMMTTYの数は１つだけなので各メソッドやイベントにnIndex引数はありません。またMMTTYとの共有メモリをプロパティや通知イベントで取り扱うことができます。しかしMMTTYリモートモードインターフェースの原理上の制約から、XMMTコントロールのような異なるPC間での通信はサポートしません。
+
+  XMMRコントロールを使う場合、MMTTYはアプリケーションのメインウインドウではなく、XMMRコントロールのウインドウと通信します。アプリケーションでコントロールのウインドウを表示したくなければ、XMMRコントロールのVisibleプロパティをFalseに設定します。
+
+*MMTTYリモートモードについてはリモートモードドキュメント(remote.txt, eremote.txt)を参照して下さい。
+
+
+==============================
+◎XMMRコントロールのプロパティ
+==============================
+  以下にXMMRコントロールのプロパティを示します。
+
+boolean bActive
+~~~~~~~~~~~~~~~
+  MMTTYとのリンクを開始します。
+  bActiveをTrueにしてからOnConnectedイベントが発生するまでにはタイムラグがあり、その間bInvokingプロパティがTrueになります。MMTTYの起動に失敗するとOnDisconnectedイベントをstatus=2で通知します。
+  bActiveをFalseに設定するとコントロールに接続しているMMTTYを終了しOnDisconnectedイベントをstatus=1で通知します。OnDisconnectedイベントがstatus=0で通知された場合、MMTTYの終了に失敗したか、またはMMTTYの終了が確認できなかった事を意味します。
+
+  XMMRコントロールが消滅する時、コントロールに接続しているMMTTYも自動的に終了します。したがってアプリケーションまたはXMMRコントロールを所有しているウインドウを終了する時にbActiveをFalseにする必要はありません。しかしXMMRコントロールが消滅していない状態で他のサウンドカードエンジンに切り替える必要がある場合、bActiveをFalseに設定し接続しているMMTTYを終了させなければなりません。この時、事前にbConfirmCloseをTrueに設定してMMTTYの終了と同期を取るようにしておきます(OnDisconnectedイベントを待つ必要はありません)。
+
+
+BSTR InvokeCommand
+~~~~~~~~~~~~~~~~~~
+  MMTTYの起動コマンドラインを設定します。ホストアプリケーションのカレントフォルダにMMTTY.EXEが存在しない場合、MMTTY.EXEのフルパス名を指定する必要があります。
+
+boolean PTT
+~~~~~~~~~~~
+  PTTを切り替えます。
+[例]
+  XMMR.PTT = True	' = Call XMMR.SetMmttyPTT(2)
+  XMMR.PTT = False	' = Call XMMR.SetMmttyPTT(0)
+
+  送信バッファをフラッシュして自動で受信に戻したい場合、SetMmttyPTTメソッドを使います。
+  Call XMMR.SetMmttyPTT(1)
+
+boolean Visible
+~~~~~~~~~~~~~~~
+  XMMRコントロールを表示します。
+
+boolean VisibleMmtty
+~~~~~~~~~~~~~~~~~~~~
+  接続中のMMTTYのウインドウを表示します。MMTTYが-mオプションで起動されている場合、VisibleMmttyは常にFalseです。
+
+boolean bInvoking (Read only)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  MMTTYとの接続処理を実行中かどうかを表します。
+
+boolean bRemoveUselessMessage
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  スレッドが長期間メッセージに応答しないと、スレッドのメッセージキューにMMTTYからのTXM_LEVELメッセージが溜まります。この溜まったTXM_LEVELメッセージによりOnNotifyNMMRイベントが連続して通知され、アプリケーションのパフォーマンスを低下させる原因になります。bRemoveUselessMessageをTrueに設定しておくと、この溜まったTXM_LEVELメッセージをスレッドのキューから取り除き、意味のないOnNotifyNMMRイベントの発生を抑止できます。
+
+boolean bTranslateAllMessages
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  Falseに設定するとXMMRが処理しないMMTTYメッセージがOnTranslateMessageイベントで通知されます。この動作がデフォルトです。
+  Trueに設定するとすべてのMMTTYメッセージがOnTranslateMessageイベントで通知され、アプリケーションはすべてのMMTTYメッセージの応答処理を独自のコードで行うことができます。この場合次に示すイベントしか発生しなくなります。
+
+	OnConnected, OnDisconnected, OnNotifyFFT, OnNotifyXY, OnComNameChanged, OnRadioNameChanged, OnTranslateMessage
+
+  Falseに設定した時、XMMRコントロールが処理するメッセージは以下の通りです。
+	TXM_HANDLE
+	TXM_REQHANDLE
+	TXM_START
+	TXM_PTTEVENT
+	TXM_CHAR
+	TXM_BAUD
+	TXM_MARK
+	TXM_SPACE
+	TXM_SWITCH
+	TXM_VIEW
+	TXM_LEVEL
+	TXM_FIGEVENT
+	TXM_NOTCH
+	TXM_RADIOFREQ
+
+
+boolean bNotifyFFT
+~~~~~~~~~~~~~~~~~~
+  OnNotifyFFTイベントの通知を許可します。
+
+boolean bNotifyXY
+~~~~~~~~~~~~~~~~~
+  OnNotifyXYイベントの通知を許可します。
+
+boolean bInitialClose
+~~~~~~~~~~~~~~~~~~~~~
+  MMTTYを起動する前に既に実行中のMMTTYを終了させます。
+
+boolean bConfirmClose
+~~~~~~~~~~~~~~~~~~~~~
+  MMTTYの終了と同期を取ります。
+
+boolean bNotifyComChange
+~~~~~~~~~~~~~~~~~~~~~~~~
+  OnComNameChanged, OnRadioNameChangedイベントの通知を許可します。
+
+long DelayInvoke
+~~~~~~~~~~~~~~~~
+  MMTTYを起動する遅延時間をms単位で設定します。デフォルトは0です。
+
+OLE_HANDLE hWndMmtty (Read only)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  MMTTYのウインドウハンドルを表します。Windows APIのウインドウファンクションを呼び出すときにこのハンドルを使います。
+
+OLE_HANDLE hwnd (Read only)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  コントロールのウインドウハンドルを表します。
+
+long SharedPointer (Read only)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  共有メモリのベースアドレスを表します。XMMRコントロールでは共有メモリをプロパティと通知イベントで取り扱うことができます。したがってアプリケーションは通常このポインタを使用する必要はありません。
+
+long TxBufLen
+~~~~~~~~~~~~~
+  共有メモリTxBufLenにアクセスします。
+
+BSTR ComName
+~~~~~~~~~~~~
+  共有メモリcomNameにアクセスします。更新した場合RXM_UPDATECOMを送ります。			
+
+BSTR Title
+~~~~~~~~~~
+  共有メモリtitleにアクセスします。更新した場合RXM_UPDATECOMを送ります。
+
+BSTR RadioName
+~~~~~~~~~~~~~~
+  共有メモリcomRadioにアクセスします。更新した場合RXM_UPDATECOMを送ります。
+
+long smpFreq (Read only)
+~~~~~~~~~~~~~~~~~~~~~~~~
+  共有メモリsmpFreqにアクセスします。
+
+long smpFFT
+~~~~~~~~~~~
+  共有メモリsmpFFTにアクセスします。	
+
+BSTR verMMTTY (Read only)
+~~~~~~~~~~~~~~~~~~~~~~~~~
+  共有メモリverMMTTYにアクセスします。
+
+long LostSound
+~~~~~~~~~~~~~~
+  共有メモリLostSoundにアクセスします。
+
+long OverFlow
+~~~~~~~~~~~~~
+  共有メモリOverFlowにアクセスします。
+
+long ErrorClock (Read only)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  共有メモリErrorClockにアクセスします。
+
+long smpDemFreq (Read only)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  共有メモリsmpdemFreqにアクセスします。
+
+BSTR Profiles(16)
+~~~~~~~~~~~~~~~~~
+  共有メモリProfileNameにアクセスします。	
+
+
+  共有メモリプロパティのうち、ComName, Title, RadioName, smpFFTの４つのプロパティは初期値をフォームデザイナで設定できます。その他の共有メモリプロパティはMMTTYと接続中のみ有効になります。
+
+
+============================
+◎XMMRコントロールのメソッド
+============================
+  以下にXMMRコントロールのメソッドを示します。
+
+boolean PostMmttyMessage(long wParam, long lParam)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  MMTTYにメッセージを送ります。
+
+boolean SetMmttySwitch(long codeswitch)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  MMTTYにスイッチ情報を送ります。PostMmttyMessage(RXM_SETSWITCH, codeswitch)と同じです。値はMMTTYリモートモードドキュメントを参照して下さい。
+
+boolean SetMmttyView(long codeview)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  MMTTYに表示情報を送ります。PostMmttyMessage(RXM_SETVIEW, codeview)と同じです。値はMMTTYリモートモードドキュメントを参照して下さい。
+
+boolean SetMmttyPTT(short ptt)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  MMTTYのPTTを切り替えます。PostMmttyMessage(RXM_PTT, ptt)と同じです。値はMMTTYリモートモードドキュメントを参照して下さい。
+
+boolean SendChar(short bChar)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  MMTTYに文字を送ります。MMTTYが受信状態の時、自動的に送信に切り替えPostMmttyMessage(RXM_CHAR, bChar)を呼び出します。
+
+boolean SendString(BSTR pStr)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  MMTTYに文字列を送ります。MMTTYが受信状態の時、自動的に送信に切り替えます。
+
+void ReadNMMR(long* pNMMR)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+  XMMRコントロールが保持しているNMMR構造体のデータを取り出します。
+
+
+============================
+◎XMMRコントロールのイベント
+============================
+  以下にXMMRコントロールのイベントを示します。
+
+void OnConnected()
+~~~~~~~~~~~~~~~~~~
+  MMTTYと接続した時に通知されます。詳細はbActiveプロパティを参照して下さい。
+
+void OnCharRcvd(short bChar)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  MMTTYが文字を受信した時に通知されます。
+
+void OnPttEvent(short btx)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+  MMTTYのPTTが切り替わった時に通知されます。
+
+void OnDisconnected(short status)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+status : 0-失敗, 1-成功, 2-起動の失敗
+  MMTTYとの接続が切断した時に通知されます。詳細はbActiveプロパティを参照して下さい。
+
+void OnNotifyNMMR(long* pNMMR)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  MMTTYからTXM_LEVELメッセージを受信するタイミングで通知されます。pNMMRが示すNMMR構造体は以下のように定義されます。
+
+#pragma pack(push, 1)
+typedef struct {
+	DWORD	m_markfreq;
+	DWORD	m_spacefreq;
+	DWORD	m_siglevel;
+	DWORD	m_sqlevel;
+	DWORD	m_codeswitch;
+	DWORD	m_codeview;
+	DWORD	m_notch1;
+	DWORD	m_notch2;
+	DWORD	m_baud;
+	DWORD	m_fig;
+	DWORD	m_radiofreq;
+	DWORD	m_Reserved[53];
+}NMMR;
+#pragma pack(pop)
+
+  この構造体を利用するとXMMRの個別のイベントに応答する必要がなくなります。NMMR構造体は単純なLONGの配列なので、VBのLong配列にコピーして参照できます。配列のインデックスにはxr_markfreqのような名前がXMMT.ocxで定義されています。詳細は「XMMRコントロール用の定義済の定数」を参照して下さい。
+
+[例]
+Private Declare Sub CopyMemory Lib "kernel32" Alias "RtlMoveMemory" (Destination As Any, Source As Any, ByVal Length As Long)
+
+Dim m_nmmr(63) As Long
+
+Private Sub XMMR_OnNotifyNMMR(pNMMR As Long)
+    Call CopyMemory(m_nmmr(0), pNMMR, 64 * 4)	'Windows API CopyMemory()
+	|
+    MarkFreq = m_nmmr(xr_markfreq)
+    SpaceFreq = m_nmmr(xr_spacefreq)
+       |
+    'おまけのコントロールを使う場合はpNMMRをコントロールにそのまま引き渡します。
+    Call XMMSpec.UpdateByNMMR(pNMMR)	'XMMSpecコントロールの周波数プロパティを更新します。
+    Call XMMLvl.DrawByNMMR(pNMMR)	'レベルインディケータを描画します。
+End Sub
+
+
+void OnNotchChanged(short notch1, short notch2)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ノッチ周波数(Hz)が通知されます。
+
+void OnViewChanged(long codeview)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  表示情報が通知されます。値はMMTTYリモートモードドキュメントを参照して下さい。
+
+void OnSwitchChanged(long codeswitch)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  スイッチ情報が通知されます。値はMMTTYリモートモードドキュメントを参照して下さい。
+
+void OnFreqChanged(short markfreq, short spacefreq)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  マーク/スペース周波数(Hz)が通知されます。
+
+void OnBaudChanged(short baud)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ボーレート(x100)が通知されます。例えば4545は45.45booを意味します。
+
+void OnNotifyFFT(short* pFFT, short size, short sampfreq)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  pFFT   : FFTデータの配列のアドレス
+  size   : FFTデータの個数(最大2048)
+  sampfreq : FFTデータのサンプリング周波数(Hz)
+[解説]
+  FFTデータが通知されます。共有メモリのflagFFTの操作はXMMRコントロールが行います。共有メモリ上のFFTデータはLONGの配列ですが、XMMT, SMMSpec, XMMWaterコントロールとの互換性のため、通知されるデータはSHORTの配列に変換されます。
+  周波数と配列内の位置の関係は以下の通りです。有効なデータは0～size/2に格納されています。smpFFTプロパティをTrueに設定しておくと、size=2048, sampfreq=8000に固定されます。
+
+	pos = freq * size / sampfreq
+	freq = pos * sampfreq / size
+	(pos:配列内の位置,  freq:周波数)
+
+[例]
+  おまけのXMMSpec, XMMWaterコントロールを使う場合は、pFFT, size, sampfreqをコントロールのDrawメソッドにそのまま引き渡します。
+
+Private Sub XMMR_OnNotifyFFT(pFFT As Integer, ByVal size As Integer, ByVal sampfreq As Integer)
+    Call XMMSpec.Draw(pFFT, size, sampfreq)
+    Call XMMWater.Draw(pFFT, size, sampfreq)
+End Sub
+
+  VBのコードで描画する場合は、FFTデータをVBの配列で参照できるようにするためにCopyMemory() Windows APIを使います。
+
+Private Sub XMMR_OnNotifyFFT(pFFT As Integer, ByVal size As Integer, ByVal sampfreq As Integer)
+    Dim fft(2047) As Integer
+    Call CopyMemory(fft(0), pFFT, size * 2)	'Windows API CopyMemory()
+	|
+    'ここでスペクトラムを描画します。
+End Sub
+
+
+void OnNotifyXY(long* pXY)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+[引数]
+ pXY : XYデータの配列のアドレス
+[解説]
+  XYスコープデータが通知されます。共有メモリのflagXYの操作はXMMRコントロールが行います。
+  配列はXデータが512点、Yデータが512点で合計1024点です。
+	Xデータ  pXY[0] -> pXY[511]
+	Yデータ  pXY[512] -> pXY[1023]
+[例]
+  おまけのXMMXYコントロールを使う場合は、pXYをコントロールのDrawメソッドにそのまま引き渡します。
+
+Private Sub XMMR_OnNotifyXY(pXY As Long)
+    Call XMMXY.Draw(pXY)
+End Sub
+
+
+  VBのコードで描画する場合は、XYデータをVBの配列で参照できるようにするためにCopyMemory() Windows APIを使います。
+
+Private Sub XMMR_OnNotifyXY(pXY As Long)
+    Dim xy(1023) As Long
+    Call CopyMemory(xy(0), pXY, 1024 * 4)		'Windows API CopyMemory()
+	|
+    'ここでXYスコープを描画します。
+End Sub
+
+
+void OnRadioFreqChanged(long freq)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  RadioCommandの周波数(KHz)が変更された時に通知されます。
+
+void OnRadioNameChanged(BSTR pStrRadio)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  RadioCommandのポート名が変更された時に通知されます。
+
+void OnComNameChanged(BSTR pStrCom)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  Comポートの名前が変更された時に通知されます。
+
+void OnFigChanged(short bFig)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  MMTTYのBAUDOTデコーダのLTR/FIGが変化した時に通知されます。
+
+void OnTranslateMessage(long wParam, long lParam)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  bTranslateAllMessagesがFalseに設定されている場合、XMMRコントロールが処理しないMMTTYメッセージが通知されます。bTranslateAllMessagesがTrueに設定されている場合、すべてのMMTTYメッセージが通知されます。
+
+[参考]
+  bTranslateAllMessagesをTrueに設定している場合、OnNotifyNMMRイベントは通知されなくなりますが、コントロール内部にはNMMR構造体を保持しています。アプリケーションがその構造体のデータを利用したい場合、ReadNMMRメソッドを呼び出します。以下に例を示します。
+
+Private Sub Form_Load()
+    XMMR.bTranslateAllMessages = True
+    XMMR.bActive = True
+End Sub
+
+Private Sub XMMR_OnTranslateMessage(ByVal wParam As Long, ByVal lParam As Long)
+    Select Case wParam
+    Case TXM_PTTEVENT
+      |
+    Case TXM_LEVEL
+        Dim nmmr(63) As Long
+        Call XMMR.ReadNMMR(nmmr(0))	' VBの配列にNMMR構造体を取り出します。
+        Call XMMSpec.UpdateByNMMR(nmmr(0))	'XMMSpecコントロールの周波数プロパティを更新します。
+        Call XMMLvl.DrawByNMMR(nmmr(0))	'レベルインディケータを描画します。
+    Case TXM_PROFILE
+      |
+    End Select
+End Sub
+
+
+========================
+◎複数のXMMRコントロール
+========================
+  MMTTYから見た通信相手はアプリケーションではなくXMMRコントロールです。したがって複数のXMMRコントロールをフォームに配置すると、それぞれのコントロールが異なるMMTTYと通信できます。ただしこの場合次に示す条件があります。
+
+	- すべてのコントロールのInvokeCommandに"-Z"を追加して指定しなければなりません(e.g. MMTTY.EXE -m -Z)。
+	- すべてのコントロールのbInitialCloseをFALSEに設定しなければなりません。
+	- bNotifyFFT, bNotifyXY, bNotifyComChangeをTRUEに設定できるのは１つのコントロールだけです。
+	- RXM_ENBSHAREDメッセージをMMTTYに送って共有メモリが競合しないようにしなければなりません。
+
+  コマンドラインで-Zが指定された場合、既に起動しているMMTTYの状態に関係なく常に新しいMMTTYが実行されます。bInitialCloseがFalseに設定されていると、XMMRはMMTTYを起動する前に既に起動しているMMTTYを終了させません。bNotifyFFT, bNotifyXY, bNotifyComChangeがFalseになっていると、XMMRは共有メモリのflagFFT, flagXY, comName, comRadio等を参照しません(関連するイベントも発生しません)。
+  共有メモリはシステム上に唯一１つしか存在しないので、例えばTxBufLenプロパティなどMMTTYの状態を表すプロパティや、FFTデータ、XYデータ等は、１つのMMTTYからしか更新されないようにしなければなりません。このためVer1.64で新しく追加されたRXM_ENBSHAREDメッセージをそれぞれのMMTTYに送る必要があります。
+
+  これらの処理を実装した例は付属のサンプルコンテナXmmrTwoContainerにあります。このサンプルでは２つのXMMRコントロールを使って２つのMMTTYに接続します。それぞれのコントロールのOnCharRcvdイベントで受信した文字は、左右のウインドウに分別されて表示されます。RXM_ENBSHAREDメッセージによる切り替え処理により、スペクトラムおよびXYスコープにはカレントのユーザーのデータが表示されます。
+
+*サウンドカードドライバがWDM型の場合、１つのサウンドカードで複数のMMTTYを同時に実行できます。
+
+MMTTY Ver.167以降の場合
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+　MMTTY Ver1.67から、起動オプションで共有メモリの名前を指定できるようになりました。これによりXMMRコントロールが通信するそれぞれのMMTTYは完全に独立した動作が可能になります。
+　例えば二つのXMMRコントロールを実装した場合、
+
+XMMR1.InvokeCommand = "MMTTY.EXE -m -Z -CMMTTY1"
+XMMR2.InvokeCommand = "MMTTY.EXE -m -Z -CMMTTY2"
+
+のように設定することにより、それぞれ異なる共有メモリを取り扱うことができます。
+
+　共有メモリを独立させるメリットは次の通りです。
+
+	- bNotifyFFT, bNotifyXY, bNotifyComChangeをそれぞれのコントロールで独立して設定できます。
+	- RXM_ENBSHAREDメッセージをMMTTYに送る必要はありません。
+
+　これらを実装した例は付属のサンプルコンテナXmmrContainer2にあります。共有メモリの名前にそれぞれMMTTY1とMMTTY2を設定することにより、スペクトラムやXYスコープもそれぞれのMMTTYのデータが同時に表示されます。
+
+
+==================================
+◎XMMRコントロール用の定義済の定数
+==================================
+  XMMRコントロールを利用するアプリケーションはXMMT.ocxで定義されている以下の定数を利用することができます。
+
+typedef enum {		// リモートモードのメッセージ
+	RXM_HANDLE=0x0000,	// APP -> MMTTY
+	RXM_REQHANDLE,
+	RXM_EXIT,
+	RXM_PTT,
+	RXM_CHAR,
+
+	RXM_WINPOS,
+	RXM_WIDTH,
+	RXM_REQPARA,
+	RXM_SETBAUD,
+	RXM_SETMARK,
+
+	RXM_SETSPACE,
+	RXM_SETSWITCH,
+	RXM_SETHAM,
+	RXM_SHOWSETUP,
+	RXM_SETVIEW,
+
+	RXM_SETSQLVL,
+	RXM_SHOW,
+	RXM_SETFIG,
+	RXM_SETRESO,
+	RXM_SETLPF,
+
+	RXM_SETTXDELAY,
+	RXM_UPDATECOM,
+	RXM_SUSPEND,
+	RXM_NOTCH,
+	RXM_PROFILE,
+
+	RXM_TIMER,
+	RXM_ENBFOCUS,	// added on Ver1.63A
+	RXM_SETDEFFREQ,	// added on Ver1.63B
+	RXM_SETLENGTH,	// added on Ver1.63B
+	RXM_ENBSHARED,	// added on Ver1.64
+
+	RXM_PTTFSK,	// added on Ver1.67B
+
+	TXM_HANDLE=0x8000,	// MMTTY -> APP
+	TXM_REQHANDLE,
+	TXM_START,
+	TXM_CHAR,
+	TXM_PTTEVENT,
+
+	TXM_HEIGHT,
+	TXM_BAUD,
+	TXM_MARK,
+	TXM_SPACE,
+	TXM_SWITCH,
+
+	TXM_VIEW,
+	TXM_LEVEL,
+	TXM_FIGEVENT,
+	TXM_RESO,
+	TXM_LPF,
+
+	TXM_THREAD,
+	TXM_PROFILE,
+	TXM_NOTCH,
+	TXM_DEFSHIFT,
+	TXM_RADIOFREQ,	// added on Ver1.63
+
+	TXM_SHOWSETUP,	// added on Ver1.64
+	TXM_SHOWPROFILE,	// added on Ver1.64
+}MMR_MSG;
+typedef enum {		// NMMR構造体のインデックス
+	xr_markfreq,
+	xr_spacefreq,
+	xr_siglevel,
+	xr_sqlevel,
+	xr_codeswitch,
+	xr_codeview,
+	xr_notch1,
+	xr_notch2,
+	xr_baud,
+	xr_fig,
+	xr_radiofreq,
+	xr_Reserved,
+}MMR_NMMR;
+
+
+========
+◎最後に
+========
+  XMMT.ocxおよびテスト用コンテナは著作権を放棄したPDSです。商用/非商用に関係なくあなたの責任において自由に利用、再配布を行うことができます。この件について私への連絡は一切無用に願います。
+
+
+73, Mako

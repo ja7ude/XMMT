@@ -1,0 +1,298 @@
+//Microsoft Developer Studio generated resource script.
+//
+#include "resource.h"
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#include "afxres.h"
+
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+// “ú–{Œê resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_JPN)
+#ifdef _WIN32
+LANGUAGE LANG_JAPANESE, SUBLANG_DEFAULT
+#pragma code_page(932)
+#endif //_WIN32
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "#include ""afxres.h""\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "1 TYPELIB ""XMMT.tlb""\r\n"
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+#endif    // “ú–{Œê resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+/////////////////////////////////////////////////////////////////////////////
+// ‰pŒê (±ÒØ¶) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+#ifdef _WIN32
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+#pragma code_page(1252)
+#endif //_WIN32
+
+#ifndef _MAC
+/////////////////////////////////////////////////////////////////////////////
+//
+// Version
+//
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION 1,0,2,1
+ PRODUCTVERSION 1,0,2,1
+ FILEFLAGSMASK 0x3fL
+#ifdef _DEBUG
+ FILEFLAGS 0x1L
+#else
+ FILEFLAGS 0x0L
+#endif
+ FILEOS 0x4L
+ FILETYPE 0x2L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904b0"
+        BEGIN
+            VALUE "Comments", "PDS for Ham radio\0"
+            VALUE "CompanyName", "JE3HHT\0"
+            VALUE "FileDescription", "XMMT ActiveX Control Module\0"
+            VALUE "FileVersion", "1, 0, 2, 1\0"
+            VALUE "InternalName", "XMMT\0"
+            VALUE "LegalCopyright", "\0"
+            VALUE "LegalTrademarks", "\0"
+            VALUE "OLESelfRegister", "\0"
+            VALUE "OriginalFilename", "XMMT.OCX\0"
+            VALUE "PrivateBuild", "\0"
+            VALUE "ProductName", "XMMT ActiveX Control Module\0"
+            VALUE "ProductVersion", "1, 0, 2, 1\0"
+            VALUE "SpecialBuild", "\0"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1200
+    END
+END
+
+#endif    // !_MAC
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Bitmap
+//
+
+IDB_XMMT                BITMAP  DISCARDABLE     "XMMTCtl.bmp"
+IDB_XMMXY               BITMAP  DISCARDABLE     "XMMXYCtl.bmp"
+IDB_XMMBTN              BITMAP  DISCARDABLE     "XMMBtnCtl.bmp"
+IDB_XMMLVL              BITMAP  DISCARDABLE     "XMMLvlCtl.bmp"
+IDB_XMMSPEC             BITMAP  DISCARDABLE     "XMMSpecCtl.bmp"
+IDB_XMMWATER            BITMAP  DISCARDABLE     "XMMWaterCtl.bmp"
+IDB_XMMR                BITMAP  DISCARDABLE     "XMMRCtl.bmp"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_PROPPAGE_XMMT DIALOG DISCARDABLE  0, 0, 250, 62
+STYLE WS_CHILD
+FONT 9, "Microsoft Sans Serif"
+BEGIN
+    LTEXT           "XMMT Control Ver1.01",IDC_STATIC,7,7,100,11
+END
+
+IDD_PROPPAGE_XMMXY DIALOG DISCARDABLE  0, 0, 250, 62
+STYLE WS_CHILD
+FONT 9, "Microsoft Sans Serif"
+BEGIN
+    LTEXT           "XMMXY Control Ver1.00",IDC_STATIC,7,7,98,16
+END
+
+IDD_PROPPAGE_XMMBTN DIALOG DISCARDABLE  0, 0, 250, 62
+STYLE WS_CHILD
+FONT 9, "Microsoft Sans Serif"
+BEGIN
+    LTEXT           "XMMBtn Control Ver1.00",IDC_STATIC,7,7,98,16
+END
+
+IDD_PROPPAGE_XMMLVL DIALOG DISCARDABLE  0, 0, 250, 62
+STYLE WS_CHILD
+FONT 9, "Microsoft Sans Serif"
+BEGIN
+    LTEXT           "XMMLvl Control Ver1.00",IDC_STATIC,7,7,98,16
+END
+
+IDD_PROPPAGE_XMMSPEC DIALOG DISCARDABLE  0, 0, 250, 62
+STYLE WS_CHILD
+FONT 9, "Microsoft Sans Serif"
+BEGIN
+    LTEXT           "XMMSpec Control Ver1.00",IDC_STATIC,7,7,135,16
+END
+
+IDD_PROPPAGE_XMMWATER DIALOG DISCARDABLE  0, 0, 250, 62
+STYLE WS_CHILD
+FONT 9, "Microsoft Sans Serif"
+BEGIN
+    LTEXT           "XMMWater Control Ver1.00",IDC_STATIC,7,7,96,16
+END
+
+IDD_PROPPAGE_XMMR DIALOG DISCARDABLE  0, 0, 250, 62
+STYLE WS_CHILD
+FONT 9, "Microsoft Sans Serif"
+BEGIN
+    LTEXT           "XMMR Control Ver1.00",IDC_STATIC,7,7,96,16
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO DISCARDABLE 
+BEGIN
+    IDD_PROPPAGE_XMMT, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 243
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 55
+    END
+
+    IDD_PROPPAGE_XMMXY, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 243
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 55
+    END
+
+    IDD_PROPPAGE_XMMBTN, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 243
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 55
+    END
+
+    IDD_PROPPAGE_XMMLVL, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 243
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 55
+    END
+
+    IDD_PROPPAGE_XMMSPEC, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 243
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 55
+    END
+
+    IDD_PROPPAGE_XMMWATER, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 243
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 55
+    END
+
+    IDD_PROPPAGE_XMMR, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 243
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 55
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// String Table
+//
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    IDS_XMMT                "XMMT Control"
+    IDS_XMMT_PPG            "XMMT Property Page"
+    IDS_XMMXY               "XMMXY Control"
+    IDS_XMMXY_PPG           "XMMXY Property Page"
+    IDS_XMMBTN              "XMMBtn Control"
+    IDS_XMMBTN_PPG          "XMMBtn Property Page"
+    IDS_XMMLVL              "XMMLvl Control"
+    IDS_XMMLVL_PPG          "XMMLvl Property Page"
+    IDS_XMMSPEC             "XMMSpec Control"
+    IDS_XMMSPEC_PPG         "XMMSpec Property Page"
+    IDS_XMMWATER            "XMMWater Control"
+    IDS_XMMWATER_PPG        "XMMWater Property Page"
+    IDS_XMMR                "XMMR Control"
+    IDS_XMMR_PPG            "XMMR Property Page"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    IDS_XMMT_PPG_CAPTION    "General"
+    IDS_XMMXY_PPG_CAPTION   "General"
+    IDS_XMMBTN_PPG_CAPTION  "General"
+    IDS_XMMLVL_PPG_CAPTION  "General"
+    IDS_XMMSPEC_PPG_CAPTION "General"
+    IDS_XMMWATER_PPG_CAPTION "General"
+    IDS_XMMR_PPG_CAPTION    "General"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    IDP_SOCKETS_INIT_FAILED "Windows sockets initialization failed."
+    IDS_XMMR_NO_WINDOW      "XMMR control does not have a window."
+END
+
+#endif    // ‰pŒê (±ÒØ¶) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+1 TYPELIB "XMMT.tlb"
+
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
+

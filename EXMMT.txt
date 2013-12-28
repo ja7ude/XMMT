@@ -1,0 +1,1077 @@
+//Copyright+LGPL
+
+//-----------------------------------------------------------------------------------------------------------------------------------------------
+// Copyright 2000-2013 Makoto Mori, Nobuyuki Oba
+//-----------------------------------------------------------------------------------------------------------------------------------------------
+// This file is part of MMTTY.
+
+// MMTTY is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License
+// as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+
+// MMTTY is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of 
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more details.
+
+// You should have received a copy of the GNU Lesser General Public License along with MMTTY.  If not, see 
+// <http://www.gnu.org/licenses/>.
+//-----------------------------------------------------------------------------------------------------------------------------------------------
+
+Active X control XMMT.ocx
+
+	First released on January 30, 2003 by JE3HHT Makoto Mori
+	Last revised on September 21, 2010 by JE3HHT Makoto Mori
+	Translated into English by JA7UDE Nobuyuki Oba
+
+This document describes Active X control XMMT.ocx.
+
+
+Contents
+	- Revision history
+	- Prologue
+	- About XMMT
+	- Properties of XMMT control
+	- Methods of XMMT control
+	- Events of XMMT control
+	- Predefined constants of XMMT control
+	- About XMMR
+	- Properties of XMMR
+	- Methods of XMMR
+	- Events of XMMR
+	- Multiple instance of XMMR control
+	- Predefined constants of XMMR control
+	- Epilogue
+
+================
+Revision history
+================
+Version 1.02 on September 21, 2010
+- XMMR: Changed the MMTTY startup timer limit from 7 seconds to 15 seconds
+- XMMR: Supported MMTTY startup options (Cxxx, -Txxx)
+
+Version 1.01 on February 15, 2003
+- XMMT: Added PostMmttyMessageAsString method
+- XMMT: Added OnGetProfileName event
+- XMMT: Added MMTMSG_SETRESO, MMTMSG_SETLPF, MMTMSG_GETPROFILENAME, MMTMSG_LOADPROFILE, MMTMSG_SAVEPROFILE, as predefined constants
+
+
+================
+Prologue
+================
+  XMMT.ocx is an OLE custom control supposed to be used by a VB6 program.  XMMT.ocx works as an interface between the host application and MMTTY.  With XMMT.ocx, VB programmers easily make a host application that communicates with MMTTY.
+
+  XMMT.ocx offers seven controls shown below:
+
+	XMMT		Capsulation of the communication between the host application and TClient.mmt (MMTTY custom TNC emulation)
+	XMMR		Capsulation of the communication between the host application and the MMTTY remote mode
+	XMMLvl		Level indicator control
+	XMMSpec	Spectrum control
+	XMMWater	Waterfall control
+	XMMXY		XY scope control
+	XMMBtn		Toggle button control
+
+  XMMLvl, XMMSpec, XMMWater, XMMXY, and XMMBtn are supplementary controls, and therefore this document does not cover them.  However, sample codes, XmmtContainer, XmmrContainer, and XmmrTwoContainer, in this package would be useful for understanding their operations.
+
+  The application using any controls of XMMT.ocx should be distributed with XMMT.ocx.  It is a good idea to simply place XMMT.ocx in the same folder of the application.  During the application development with VB6, XMMT.ocx should reside in the source code folder of the application.
+
+  XMMT.ocx runs on the following Windows platforms:
+	Windows 95, 98, 98SE, ME
+	Windows NT, 2000, XP
+
+
+
+==========================
+About XMMT
+==========================
+
+  XMMT control encapsulates the MMTTY custom TNC emulation, TClient.mmt.
+
+		XMMT <---(LAN)---> TClinet.mmt <-------> MMTTY (custom TNC emulation)
+
+- It uses Windows socket and accepts connections from up to eight MMTTY clients.
+- It processes the MMTTY messages and notification functions using CCustomSession class protocol
+
+  For the MMTTY custom TNC emulation, refer to EMMT.txt in the custom TNC emulation package.
+
+
+==============================
+Properties of XMMT control
+==============================
+
+short wPortTcp
+~~~~~~~~~~~~~~
+  This is TCP port number.   The default number is 10301.  If you change the value, you must also change the value specified in TClient.ini.
+
+BOOL bActive
+~~~~~~~~~~~~
+  Put TRUE to bActive to activate XMMT.  It has the same effect of calling Listen() method.
+[Example]
+Private Sub Form_Load()
+    XMMT.bActive = True
+End Sub
+
+short wMaxCount (Read only)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+This is the maximum number of clients that can simultaneously connect to XMMT.   The value is 8.
+
+short wCount (Read only)
+~~~~~~~~~~~~~~~~~~~~~~~~
+This variable shows the number of clients currently having connection to XMMT.
+
+BOOL bFftConversion
+~~~~~~~~~~~~~~~~~~~
+This variable specifies whether the FFT data notified by OnNotifyFFT is frequency converted or not.  If TRUE, the sampling frequency and the number of data are fixed to 8000Hz and 2048 points, respectively.
+
+BSTR HostName(Read only)
+~~~~~~~~~~~~~~~~~~~~~~~~
+This variable holds the computer name.
+
+
+============================
+Methods of XMMT control
+============================
+
+BSTR GetAddress(short nIndex)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[Parameter]
+  nIndex : Client ID (0 to 7)
+[Return value]
+  Character string representing the client address
+[Description]
+  This method returns the client address in the character string format.  If not connected, it returns Unknown.
+
+
+BOOL Listen()
+~~~~~~~~~~~~~
+[Return value]
+  TRUE - succeeded
+  FALSE - failed
+[Description]
+  This method makes the MMTTY listen to TCP through port number wPortTcp.  When the client is connected, OnConnected event is generated.  If the port has already been used, it returns FALSE.
+
+
+BOOL IsConnected(short nIndex)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[Parameter]
+  nIndex : Client ID (0 to 7)
+[Return value]
+  TRUE - connected
+  FALSE - disconnected
+[Description]
+  This method returns the connection status of the client specified by nIndex.
+
+BOOL SendChar(short nIndex, short bChar)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[Parameters]
+  nIndex : Client ID (0 to 7)
+  bChar  : Character code (0 to 239)
+[Return value]
+  TRUE - succeeded
+  FALSE - failed
+[Description]
+  This method sends the character to the client specified by nIndex.  Use SendCode to send a TNC common command.
+[Example]
+  r = XMMT.SendChar(0, 65)
+
+
+BOOL SendString(short nIndex, LPCTSTR pStr, short nLen) 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[Parameters]
+  nIndex : Client ID (0 to 7)
+  pStr   : Character string
+  nLen   : Number of characters to send (if 0 then it sends all characters till the end of pStr)
+[Return value]
+  TRUE - succeeded
+  FALSE - failed
+[Description]
+  This method sends a character string to the client specified by nIndex.  Use SendCode to send a TNC common command.
+[Example]
+  r = XMMT.SendString(0, "MAIDO", 0)
+  r = XMMT.SendCode(0, TNC_PTTON)
+  r = XMMT.SendCode(0, TNC_PTTFLUSH)
+This example sends character string "MAIDO" and then goes back to RX. 
+
+
+BOOL SendCode(short nIndex, short bCode)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[Parameters]
+  nIndex : Client ID (0 to 7)
+  bCode  : Character code (0 to 254)
+[Return value]
+  TRUE - succeeded
+  FALSE - failed
+[Description]
+  This method sends the character including a TNC common command to the client specified by nIndex.  However, code 255 is used (reserved) in CCustomSession and cannot be sent to the client.
+[Example]
+  r = XMMT.SendCode(0, TNC_PTTOFF)
+
+
+BOOL IsBusy(short nIndex)
+~~~~~~~~~~~~~~~~~~~~~~~~~
+[Parameter]
+  nIndex : Client ID (0 to 7)
+[Return value]
+  TRUE - busy,
+  FALSE - ready
+[Description]
+  This method returns the status (BUSY or READY) of the client specified by nIndex.  To send a plenty of data (e.g., a file transfer), you should use this method to check if the client is ready for accepting the data.
+
+
+SetBusy(short nIndex, short bBusy)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[Parameters]
+  nIndex : Client ID (0 to 7)
+  bBusy  : TRUE - Busy state, FALSE - Ready state
+[Description]
+  This method changes the client state to BUSY or READY.  In normal situation, the application does not have to use this method.
+
+
+BOOL PostMmttyMessage(short nIndex, long wParam, long lParam)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[Parameters]
+  nIndex : Client ID (0 to 7)
+  wParam : First parameter of the message
+  lParam : Second parameter of the message
+[Return value]
+  TRUE - succeeded
+  FALSE - failed
+[Description]
+  This method sends the message to the client specified by nIndex.  MMTTY does not return a message in response to this operation.
+[Example]
+  r = XMMT.PostMmttyMessage(0, MMTMSG_SETSQ, 700)
+
+
+BOOL SendMmttyMessage(short nIndex, long wParam, long lParam)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[Parameters]
+  nIndex : Client ID (0 to 7)
+  wParam : First parameter of the message
+  lParam : Second parameter of the message
+[Return value]
+  TRUE - succeeded
+  FALSE - failed
+[Description]
+  This method sends the message to the client specified by nIndex.  MMTTY returns a message through the OnMessageResult event in response to this method.
+[Example]
+  r = XMMT.SendMmttyMessage(0, MMTMSG_CHAR, 65)
+
+
+BOOL WriteMmttyTxw(short nIndex, LPCTSTR pStr)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[Parameters]
+  nIndex : Client ID (0 to 7)
+  pStr   : Character string
+[Return value]
+  TRUE - succeeded
+  FALSE - failed
+[Description]
+  This method sends the character string to the client specified by nIndex.  Use this method for sending MMTMSG_WRITETXW.  If you would use PostMmttyMessage or SendMmttyMessage for sending MMTMSG_WRITETXW, the operation fails because lParam is a pointer. 
+[Example]
+  r = XMMT.WriteMmttyTxw(0, "OIDO")
+
+
+BOOL PostMmttyMessageAsString(short nIndex, long wParam, LPCTSTR pStr)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[Parameters]
+  nIndex : Client ID (0 to 7)
+  wParam : First parameter of the message
+  pStr   : Character string
+[Return value]
+  TRUE: succeeded
+FALSE: failed
+[Description]
+  This method sends the character string to the client specified by Client ID.  pStr is converted to the pointer to lParam string when it is passed to MMTTY.  You can use this method to send MMTMSG_WRITETXW and MMTMSG_SAVEPROFILE messages.  MMTTY returns nothing.
+[Example]
+  r = XMMT.PostMmttyMessageAsString(0, MMTMSG_SAVEPROFILE, "0,My standard settings")
+
+
+BOOL SetNotify(short nIndex, short bNotify)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[Parameters]
+  nIndex : Client ID (0 to 7)
+  bNotify: b0-mmtNotify, b1-mmtNotifyFFT, b2-mmtNotifyXY
+[Return value]
+  TRUE - succeeded
+  FALSE - failed
+[Description]
+  This method enables or disables the client to generate the notify events.  Right after the connection is established, all the notify events are disabled.
+[Example]
+  r = XMMT.SetNotify(0, ntNOTIFY + ntNOTIFYFFT + ntNOTIFYXY)
+[Note]
+  Each of mmtNotifyFFT and mmtNotifyXY sends about 4096 bytes at a time.  In case two or more clients are connected and generate the events at the same time, the network would be overloaded.  In such a situation, it is a good idea to show the spectrum and XY scope only for the current client by using SetNotify method.
+
+
+Disconnect(short nIndex)
+~~~~~~~~~~~~~~~~~~~~~~~~
+[Parameter]
+  nIndex : Client ID (0 to 7)
+[Description]
+  This method compulsory terminates the connection to the client specified by nIndex.
+
+
+
+============================
+Events of XMMT control
+============================
+
+OnConnected(short nIndex)
+~~~~~~~~~~~~~~~~~~~~~~~~~
+[Parameter]
+  nIndex : Client ID (0 to 7)
+[Description]
+  This event is generated when the client is connected.  Once the connection is established, the client ID (nIndex) will not change.  The index numbers are sequentially assigned starting at 0, and 1, 2, 3...  If one of the clients is disconnected, the index number just released will be reused for the next connection.
+
+[Example]
+  This is a typical initialization procedure.
+
+Private Sub XMMT_OnConnected(ByVal nIndex As Integer)
+    Call XMMT.SendCode(nIndex, TNC_PTTOFF)	'Change the MMTTY TNC to the conversation mode
+    Call XMMT.SendCode(nIndex, TNC_ECHOON)	'Change the MMTTY ECHO to AfterSending
+    Call XMMT.SetNotify(nIndex, ntNOTIFY + ntNOTIFYFFT + ntNOTIFYXY)	'Set the notify event
+End Sub
+
+
+OnDisconnected(short nIndex)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[Parameter]
+  nIndex : Client ID (0 to 7)
+[Description]
+  This event is generated when the client is disconnected.
+ 
+OnCharRcvd(short nIndex, short bChar)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[Parameters]
+  nIndex : Client ID (0 to 7)
+  bChar  : Received character
+[Description]
+  This event is generated when the character is received from the client.
+
+
+OnPttEvent(short nIndex, short btx)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[Parameters]
+  nIndex : Client ID (0 to 7)
+  btx    : TRUE - Switch to TX,  FALSE - Switch to RX
+[Description]
+  This event is generated when the client switches TX/RX.
+
+
+OnBusyEvent(short nIndex, short bBusy)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[Parameters]
+  nIndex : Client ID (0 to 7)
+  bBusy  : TRUE - Busy,  FALSE - Ready
+[Description]
+  This event is generated when the client state, BUSY/READY, changes.  A standard application does not have to support this event.
+
+
+OnNotifyNMMT(short nIndex, LONG *pNMMT)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[Parameters]
+  nIndex : Client ID (0 to 7)
+  pNMMT  : Address of NMMT struct
+[Description]
+  This event is generated when mmtNotify notify function is received from the client.  The memory space for pNMMT is temporarily assigned, so that pNMMT cannot be used outside the scope.
+[Example]
+  Use CopyMemory() Windows API to allow the Visual Basic to directly refer to the NMMT struct.  Because NMMT struct is a simple array consisting of LONG data, it can be easily accessed by using LONG array of VB.  For the index of the array, some names, such as xt_markfreq, are defined in the XMMT.ocx.  See the predefined constants of XMMT control for details.
+
+Private Declare Sub CopyMemory Lib "kernel32" Alias "RtlMoveMemory" (Destination As Any, Source As Any, ByVal Length As Long)
+
+Dim m_nmmt(63, 7) As Long	'this is a multi-dimensional array to communicate with eight clients at a time
+
+Private Sub XMMT_OnNotifyNMMT(ByVal nIndex As Integer, pNMMT As Long)
+    Call CopyMemory(m_nmmt(0, nIndex), pNMMT, 64 * 4)	'Windows API CopyMemory()
+	|
+    MarkFreq = m_nmmt(xt_markfreq, nIndex)
+    SpaceFreq = m_nmmt(xt_spacefreq, nIndex)
+       |
+    'In case the supplemental control is used, pass pNMMT to it as is
+    Call XMMSpec.UpdateByNMMT(pNMMT)	'Update the frequency property of XMMSpec control
+    Call XMMLvl.DrawByNMMT(pNMMT)	'Draw the level indicator
+End Sub
+
+
+OnNotifyFFT(short nIndex, short *pFFT, short size, short sampfreq)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[Parameters]
+  nIndex : Client ID (0 to 7)
+  pFFT   : Address of the FFT data array
+  size   : Number of the FFT data (max 2048)
+  sampfreq : Sampling frequency of the FFT data in Hz
+[Description]
+  This event is generated when mmtNotifyFFT notify function is received from the client.  If bFftConversion property is TRUE, OCX always converts the data to size=2048 and sampfreq=8000.  The memory space for the FFT data is temporarily assigned, so that pFFT is not valid outside the scope.
+[Example]
+  If you use supplemental controls, XMMSpec and XMMWater, you should pass pFFT, size, and sampfreq to the Draw method of the control.
+
+Private Sub XMMT_OnNotifyFFT(ByVal nIndex As Integer, pFFT As Integer, ByVal size As Integer, ByVal sampfreq As Integer)
+    Call XMMSpec.Draw(pFFT, size, sampfreq)
+    Call XMMWater.Draw(pFFT, size, sampfreq)
+End Sub
+
+
+  To draw the spectrum by a VB code, use CopyMemory() Windows API to make the FFT visible from the VB array.
+
+Private Sub XMMT_OnNotifyFFT(ByVal nIndex As Integer, pFFT As Integer, ByVal size As Integer, ByVal sampfreq As Integer)
+    Dim fft(2047) As Integer
+    Call CopyMemory(fft(0), pFFT, size * 2)	'Windows API CopyMemory()
+	|
+    'Draw the spectrum here
+End Sub
+ 
+OnNotifyXY(short nIndex, LONG *pXY)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[Parameters]
+  nIndex : Client ID (0 to 7)
+  pXY    : Address of the XY data array
+[Description]
+  This event is generated when mmtNotifyXY notify function is received.  The memory space for the XY data array is assigned temporarily and therefore it cannot be used outside the scope.
+[Example] 
+  To use the supplemental control, XMMXY, pass pXY to the Draw method as is.
+
+Private Sub XMMT_OnNotifyXY(ByVal nIndex As Integer, pXY As Long)
+    Call XMMXY.Draw(pXY)
+End Sub
+
+  To draw the XY scope by VB code, use CopyMemory() Windows API to make the XY data accessible as the VB array.
+
+Private Sub XMMT_OnNotifyXY(ByVal nIndex As Integer, pXY As Long)
+    Dim xy(1023) As Long
+    Call CopyMemory(xy(0), pXY, 1024 * 4)		'Windows API CopyMemory()
+	|
+    'Draw the XY scope here
+End Sub
+
+
+OnMessageResult(short nIndex, LONG wParam, LONG lParam, LONG lResult)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[Parameter]
+  nIndex : Client ID (0 to 7)
+  wParam : wParam value in the message
+  lParam : lParam value in the message
+  lResult: message return value
+[Description]
+  This event is generated when the Return value is received from the client.  The event is generated when SendMmttyMessage method sends the message.
+
+
+OnGetProfileName(short nIndex, short nProfile, LPCSTR pStr)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[Parameters]
+  nIndex : Client ID (0 to 7)
+  nProfile : Profile number (0Å`7)
+  pStr : Profile name
+[Description]
+ This event is generated when MMTMSG_GETPROFILENAME message is received from the client.  Visual Basic can use pStr as the character string.
+[Note]
+ You must use SendMmttyMessage method to send MMTMSG_GETPROFILENAME.  The events are traversed along in the following manner:
+
+ (XMMT)SendMmttyMessage
+	| LAN (CCustomSession)
+(TClient)SendMessage
+	|
+(MMTTY)MMTMSG_GETPROFILENAME
+	|
+(TClient)Return from MMTTY
+	| LAN (CCustomSession)
+(XMMT)OnGetProfileName
+
+[Example]
+  The code shown below is an example that puts a profile name in the menu array named KPS.  This example sends MMTMSG_GETPROFILENAME to the client right after the connection, and requests all the profile names.  For the profile menu implementation, refer to XmmtContainer.
+
+Private Sub XMMT_OnConnected(ByVal nIndex As Integer)
+    Dim i As Integer
+    For i = 0 To 7 Step 1
+        Call XMMT.SendMmttyMessage(nIndex, MMTMSG_GETPROFILENAME, i)
+    Next i
+End Sub
+
+Private Sub XMMT_OnGetProfileName(ByVal nIndex As Integer, ByVal nProfile As Integer, ByVal pStr As String)
+    KPS(nProfile).Caption = "&" + CStr(nProfile + 1) + ":" + pStr
+    KPS(nProfile).Enabled = Len(pStr)
+End Sub
+
+
+==================================
+Predefined constants of XMMT control
+==================================
+  XMMT.ocx has several predefined constants for the application.
+
+typedef enum {		// TNC common command
+	TNC_PTTON = 0x00f0,
+	TNC_PTTOFF,
+	TNC_PTTFLUSH,
+	TNC_CLEARBUF,
+	TNC_AFCON,
+	TNC_AFCOFF,
+	TNC_NETON,
+	TNC_NETOFF,
+	TNC_REVON,
+	TNC_REVOFF,
+	TNC_HAM,
+	TNC_ECHOON,
+	TNC_ECHOOFF,
+	TNC_CANCELPTTFLUSH,
+}MMT_COM;
+typedef enum {		// Message to MMTTY
+	MMTMSG_NULL,
+	MMTMSG_CHAR,
+	MMTMSG_PTT,
+	MMTMSG_COMMON,
+	MMTMSG_CLEARFIFO,
+	MMTMSG_SETSWITCH,
+	MMTMSG_SETVIEW,
+	MMTMSG_CHARTXW,
+	MMTMSG_WRITETXW,
+	MMTMSG_SETFREQ,
+	MMTMSG_SETBAUD,
+	MMTMSG_SETSQ,
+	MMTMSG_SETNOTCH,
+	MMTMSG_SETDEFFREQ,
+	MMTMSG_SETPTTTIMER,
+	MMTMSG_SETTNCTYPE,
+	MMTMSG_SETPRIORITY,
+	MMTMSG_SETLENGTH,
+	MMTMSG_SETRESO,
+	MMTMSG_SETLPF,
+	MMTMSG_GETPROFILENAME,
+	MMTMSG_LOADPROFILE,
+	MMTMSG_SAVEPROFILE,
+}MMT_MSG;
+typedef enum {		// Index of NMMT array
+	xt_markfreq,
+	xt_spacefreq,
+	xt_siglevel,
+	xt_sqlevel,
+	xt_txbuflen,
+	xt_codeswitch,
+	xt_codeview,
+	xt_notch1,
+	xt_notch2,
+	xt_baud,
+	xt_bitlength,
+	xt_txwlen,
+	xt_sampfreq,
+	xt_demfreq,
+	xt_radiofreq,
+	xt_modetnc,
+	xt_fig,
+	xt_defmark,
+	xt_defshift,
+	xt_Reserved,
+}MMT_NMMT;
+typedef enum {		// SetNotify flag
+	ntNOTIFY=1,
+	ntNOTIFYFFT=2,
+	ntNOTIFYXY=4,
+}MMT_SETNOTIFY;
+
+
+==========================
+About XMMR
+==========================
+  XMMR control encapsulates the communication processes for the MMTTY remote mode.
+
+		XMMR <-------> MMTTY (remote mode)
+
+  XMMR is very similar to XMMT, but XMMT is of server type; it waits for the connection from MMTTY.  XMMR, on the other hand, is of client type; it actively makes the connection to MMTTY.
+  XMMR control makes connection to just one MMTTY, and therefore it does not have nIndexParameter in the methods or events.  To exchange data with MMTTY, it can use a shared memory through properties and notify events.  However, because of the limitation in the MMTTY remote mode interface, it does not support the inter-PC communication, which XMMT does.
+  With XMMR control, MMTTY communicates with the XMMR control window rather than with the application main window.  To hide the control window, change the Visible property of the XMMR control to False.
+
+*   For the MMTTY remote mode, refer to the remote mode documents (remote.txt and eremote.txt).
+
+
+==============================
+Properties of XMMR control
+==============================
+
+boolean bActive
+~~~~~~~~~~~~~~~
+  This property establishes a link to MMTTY.  It takes time for XMMR/MMTTY to generate OnConnected event in response to putting True to bActive.  In the meantime, bInvoking property becomes True.  If it fails to start MMTTY, XMMR generates OnDisconnected event with status = 2.
+  When bActive is set to False, XMMR stops the MMTTY and generates OnDisconnected event with status = 1.  If OnDisconnected event with status = 0 is generated, it means that XMMR failed to stop MMTTY or could not confirm the MMTTY to be stopped.
+
+  When XMMR control is terminated, the connected MMTTY also terminates its operations.  For this reason, the application does not have to put False to bActive when it terminates itself.  However, if the application is in active state and switches to another soundcard engine, put False to bActive in order to terminate MMTTY.  Before doing this, put True to bConfirmClose so that it can synchronizes to the MMTTY termination (does not have to wait for OnDisconnect event).
+
+
+BSTR InvokeCommand
+~~~~~~~~~~~~~~~~~~
+  This property specifies the location of MMTTY.EXE.  If MMTTY.EXE is not in the same folder of the application, specify the full path of MMTTY.EXE.
+
+boolean PTT
+~~~~~~~~~~~
+  This property makes and breaks PTT.
+[Example]
+  XMMR.PTT = True	' = Call XMMR.SetMmttyPTT(2)
+  XMMR.PTT = False	' = Call XMMR.SetMmttyPTT(0)
+
+  To flush the TX buffer and switch back to RX, use SetMmttyPTT method.
+  Call XMMR.SetMmttyPTT(1)
+
+boolean Visible
+~~~~~~~~~~~~~~~
+  This property makes the XMMR control visible/invisible.
+
+boolean VisibleMmtty
+~~~~~~~~~~~~~~~~~~~~
+  This property makes the MMTTY window visible/invisible.  In case MMTTY is started with -m option, VisibleMmtty is always False.
+
+
+boolean bInvoking (Read only)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  This property indicates whether the connection procedure is in process or not.
+
+boolean bRemoveUselessMessage
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  In case the thread has not responded to the message for a while, the thread message queue is fulfilled with TXM_LEVEL messages from MMTTY.  The TXM_LEVEL messages in the queue will continuously generate OnNotifyNMMR events, and this will degrade the performance of the application.  If bRemoveUselessMessage is set True, XMMR removes the queued TXM_LEVEL messages and will not generate unnecessary OnNotifyNMMR events.
+
+boolean bTranslateAllMessages
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  If this property is set False, the MMTTY messages that XMMR does not handle are notified as OnTranslateMessage event.  This is default setting.
+  If this property is set True, all the MMTTY messages are notified as OnTranalateMessage event, so that the application can handle all the MMTTY messages by itself.  In this case, only the following events are generated.
+
+	OnConnected, OnDisconnected, OnNotifyFFT, OnNotifyXY, OnComNameChanged, OnRadioNameChanged, OnTranslateMessage
+
+  If it is set False, XMMR handles the following messages:
+	TXM_HANDLE
+	TXM_REQHANDLE
+	TXM_START
+	TXM_PTTEVENT
+	TXM_CHAR
+	TXM_BAUD
+	TXM_MARK
+ 	TXM_SPACE
+	TXM_SWITCH
+	TXM_VIEW
+	TXM_LEVEL
+	TXM_FIGEVENT
+	TXM_NOTCH
+	TXM_RADIOFREQ
+
+
+boolean bNotifyFFT
+~~~~~~~~~~~~~~~~~~
+  This property enables/disables OnNotifyFFT event.
+
+boolean bNotifyXY
+~~~~~~~~~~~~~~~~~
+  This property enables/disables OnNotifyXY event.
+
+boolean bInitialClose
+~~~~~~~~~~~~~~~~~~~~~
+  This property terminates the currently running MMTTTY before XMMR starts another MMTTY.
+
+boolean bConfirmClose
+~~~~~~~~~~~~~~~~~~~~~
+  This property makes XMMR synchronized with the MMTTY termination.
+
+boolean bNotifyComChange
+~~~~~~~~~~~~~~~~~~~~~~~~
+  This property enables/disables OnComNameChanged and OnRadioNameChanged events.
+
+long DelayInvoke
+~~~~~~~~~~~~~~~~
+  This property specifies the delay time for MMTTY start-up.  The default value is zero.
+
+OLE_HANDLE hWndMmtty (Read only)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  This is the MMTTY window handle for Windows API functions that need the window handle.
+
+OLE_HANDLE hwnd (Read only)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  This is the control window handle.  
+
+long SharedPointer (Read only)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  This is the base address of the shared memory.  With XMMR, the application can access the shared memory by property and/or notify event, and therefore it does not have to use this address in normal situation.
+
+long TxBufLen
+~~~~~~~~~~~~~
+  TxBufLen on the shared memory.  The application can read and write it.
+
+
+BSTR ComName
+~~~~~~~~~~~~
+  ComName on the shared memory.  The application can read and write it.  When it is updated, XMMR sends RXM_UPDATECOM to MMTTY.  In response to the RXM_UPDATECOM message, MMTTY is going to read ComName and takes an appropriate action.	
+
+BSTR Title
+~~~~~~~~~~
+  Title on the shared memory.    The application can read and write it.  When it is updated, XMMR sends RXM_UPDATECOM to MMTTY.  In response to the RXM_UPDATECOM message, MMTTY is going to read Title and takes an appropriate action.
+
+BSTR RadioName
+~~~~~~~~~~~~~~
+  RadioName on the shared memory.    The application can read and write it.  When it is updated, XMMR sends RXM_UPDATECOM to MMTTY.  In response to the RXM_UPDATECOM message, MMTTY is going to read RadioName and takes an appropriate action. 
+
+long smpFreq (Read only)
+~~~~~~~~~~~~~~~~~~~~~~~~
+  smpFreq on the shared memory.  The application can read it.  
+
+long smpFFT
+~~~~~~~~~~~
+  smpFFT on the shared memory.  The application can read and write it.
+
+BSTR verMMTTY (Read only)
+~~~~~~~~~~~~~~~~~~~~~~~~~
+  verMMTTY on the shared memory.  The application can read it.
+
+long LostSound
+~~~~~~~~~~~~~~
+  LostSound on the shared memory.  The application can read and write it.
+
+long OverFlow
+~~~~~~~~~~~~~
+  OverFlow on the shared memory.  The application can read and write it.
+
+long ErrorClock (Read only)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ErrorClock on the shared memory.   The application can read it.
+
+long smpDemFreq (Read only)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  smpdemFreq on the shared memory.  The application can read it.
+
+BSTR Profiles(16)
+~~~~~~~~~~~~~~~~~
+ ProfileName on the shared memory.  The application can read and write it.
+
+
+  The shared memory properties, ComName, Title, RadioName, smpFFT, can be set the initial values in the form designer.  The other properties are accessible only while the connection to the MMTTY is active.
+
+
+
+============================
+Methods of XMMR control
+============================
+
+boolean PostMmttyMessage(long wParam, long lParam)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  This method sends a message to MMTTY.
+
+boolean SetMmttySwitch(long codeswitch)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  This method sends the switch information to MMTTY.  It is equivalent to PostMmttyMessage(RXM_SETSWITCH, codeswitch).  The content of codeswitch is described in EREMOTE.TXT of the MMTTY remote mode package.
+
+boolean SetMmttyView(long codeview)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  This method sends the display information to MMTTY.  It is equivalent to PostMmttyMessage(RXM_SETVIEW, codeview).  The content of codeview is described in EREMOTE.TXT.
+
+boolean SetMmttyPTT(short ptt)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  This method switches MMTTY PTT.  It is equivalent to PostMmttyMessage(RXM_PTT, ptt).  The content of ptt is described in EREMOTE.TXT.
+
+boolean SendChar(short bChar)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  This method sends a character to MMTTY.  If MMTTY is in RX, it automatically switches MMTTY to TX, and calls PostMmttyMessage(RXM_CHAR, bChar).
+
+boolean SendString(BSTR pStr)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  This method sends a character string to MMTTY.  If MMTTY is in RX, it automatically switches MMTTY to TX.
+
+void ReadNMMR(long* pNMMR)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+ This method retrieves the NMMR struct stored in XMMR control.
+
+
+
+============================
+Events of XMMR control
+============================
+
+void OnConnected()
+~~~~~~~~~~~~~~~~~~
+  This event is generated when it is connected to MMTTY.  Refer to bActive property for details.
+
+void OnCharRcvd(short bChar)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  This event is generated when MMTTY receives a character.
+
+void OnPttEvent(short btx)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+  This event is generated when MMTTY switches TX/RX.
+
+void OnDisconnected(short status)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+status : 0-failed, 1-succeeded, 2-faild to start
+  This event is generated when the connection to MMTTY is detached.  See bActive property for more information.
+
+void OnNotifyNMMR(long* pNMMR)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  This event is generated at the timing of TXM_LEVLEL message arrival.  NMMR struct pointed by pNMMR is defined by
+
+#pragma pack(push, 1)
+typedef struct {
+	DWORD	m_markfreq;
+	DWORD	m_spacefreq;
+	DWORD	m_siglevel;
+	DWORD	m_sqlevel;
+	DWORD	m_codeswitch;
+	DWORD	m_codeview;
+	DWORD	m_notch1;
+	DWORD	m_notch2;
+	DWORD	m_baud;
+	DWORD	m_fig;
+	DWORD	m_radiofreq;
+	DWORD	m_Reserved[53];
+}NMMR;
+#pragma pack(pop)
+
+  the application does not have to respond all the XMMR events if it uses this struct.  Because NMMR struct simply consists of LONG variables, it can be copied to VB Long array.  The index of the array has several names, such as xr_markfreq, in XMMT.ocx.  For details, refer to Predefined constants of XMMR.
+
+[Example]
+Private Declare Sub CopyMemory Lib "kernel32" Alias "RtlMoveMemory" (Destination As Any, Source As Any, ByVal Length As Long)
+
+Dim m_nmmr(63) As Long
+
+Private Sub XMMR_OnNotifyNMMR(pNMMR As Long)
+    Call CopyMemory(m_nmmr(0), pNMMR, 64 * 4)	'Windows API CopyMemory()
+	|
+    MarkFreq = m_nmmr(xr_markfreq)
+    SpaceFreq = m_nmmr(xr_spacefreq)
+       |
+    'Pass pNMMR to the control for the supplemental control
+    Call XMMSpec.UpdateByNMMR(pNMMR)	'Update the frequency property of XMMSpec control
+    Call XMMLvl.DrawByNMMR(pNMMR)	'Draw the level indicator
+End Sub
+
+
+void OnNotchChanged(short notch1, short notch2)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  This event notifies the notch frequency.
+
+void OnViewChanged(long codeview)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   This event notifies the display information.  Refer to EREMOTE.TXT for details.
+
+void OnSwitchChanged(long codeswitch)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  This event notifies the switch information. Refer to EREMOTE.TXT for more information.
+
+void OnFreqChanged(short markfreq, short spacefreq)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  This event notifies the mark and space frequencies in Hz.
+
+void OnBaudChanged(short baud)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  This event notifies the baud rate multiplied by 100 (4545 means 45.45 baudot).
+
+void OnNotifyFFT(short* pFFT, short size, short sampfreq)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  pFFT   : Address of the FFT data array
+  size   : Number of the FFT data (maximum 2048)
+  sampfreq : Sampling frequency of the FFT data
+[Description]
+  This event notifies the FFT data.  XMMR is in charge of handling flagFFT in the shared memory.  The FFT data in the shared memory is an array of LONG, but for the compatibility with XMMT, XMMSpec, XMMWater, the data in the array are converted to SHORT.
+  The relationship between the frequency and the position in the array is defined as follows.
+
+	pos = freq * size / sampfreq
+	freq = pos * sampfreq / size
+	(pos: position in the array,  freq: frequency)
+
+The valid data are stored in 0 to size/2.  If smpFFT property is True, the size and sampfreq are fixed to 2048 and 8000, respectively
+
+[Example]
+  To use the supplemental XMMSpec and XMMWater controls, simply pass pFFT, size, and sampfreq to the Draw method of the control.
+
+Private Sub XMMR_OnNotifyFFT(pFFT As Integer, ByVal size As Integer, ByVal sampfreq As Integer)
+    Call XMMSpec.Draw(pFFT, size, sampfreq)
+    Call XMMWater.Draw pFFT, size, sampfreq)
+End Sub
+
+  In case of VB, use CopyMemory() Windows API to make the FFT data accessible to VB as an array.
+
+Private Sub XMMR_OnNotifyFFT(pFFT As Integer, ByVal size As Integer, ByVal sampfreq As Integer)
+    Dim fft(2047) As Integer
+    Call CopyMemory(fft(0), pFFT, size * 2)	'Windows API CopyMemory()
+	|
+    'Draw the spectrum here
+End Sub
+
+
+void OnNotifyXY(long* pXY)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+[Parameter]
+ pXY : Address of the XY data array
+[Description]
+  This event notifies the XY scope data.  flagXY in the shared memory is handled by XMMR control.  The array comprises 512 X data and 512 Y data (1024 data in total).
+	X data  pXY[0] -> pXY[511]
+	Y data  pXY[512] -> pXY[1023]
+[Example]
+  To use the supplemental XMMY control, simply pass pXY to the Draw method of the control.
+
+Private Sub XMMR_OnNotifyXY(pXY As Long)
+    Call XMMXY.Draw(pXY)
+End Sub
+
+To draw the XY scope in the VB code, use CopyMemory() API to make the XY data visible to the VB as an array.
+
+Private Sub XMMR_OnNotifyXY(pXY As Long)
+    Dim xy(1023) As Long
+    Call CopyMemory(xy(0), pXY, 1024 * 4)		'Windows API CopyMemory()
+	|
+    'Draw the XY scope here
+End Sub
+
+void OnRadioFreqChanged(long freq)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  This event notifies the change of the RadioCommand frequency (kHz).
+
+void OnRadioNameChanged(BSTR pStrRadio)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  This event notifies the change of the RadioCommand port name.
+
+void OnComNameChanged(BSTR pStrCom)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  This event notifies the change of the COM port name.
+
+void OnFigChanged(short bFig)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  This event notifies the change of LTR/FIG of the baudot decoder.
+
+void OnTranslateMessage(long wParam, long lParam)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  If bTranslateAllMessages is False, this event notifies the MMTTY messages that XMMR does not handle.  If it is True, on the other hand, the event notifies all the MMTTY messages.
+
+[Note]
+  If bTranslateAllMessages is True, OnNotifyNMMR event will not be generated, but the XMMR still has NMMR struct.  The application can use the struct by using ReadNMMR method, as shown below.
+
+Private Sub Form_Load()
+    XMMR.bTranslateAllMessages = True
+    XMMR.bActive = True
+End Sub
+
+Private Sub XMMR_OnTranslateMessage(ByVal wParam As Long, ByVal lParam As Long)
+    Select Case wParam
+    Case TXM_PTTEVENT
+      |
+    Case TXM_LEVEL
+        Dim nmmr(63) As Long
+        Call XMMR.ReadNMMR(nmmr(0))	'Get NMMR struct  in VB array
+        Call XMMSpec.UpdateByNMMR(nmmr(0))	'Update the frequency property of XMMSpec control
+        Call XMMLvl.DrawByNMMR(nmmr(0))	'Draw the level indicator
+    Case TXM_PROFILE
+      |
+    End Select
+End Sub
+
+
+========================
+Multiple instance of XMMR control
+========================
+  MMTTY communicates with XMMR control and does not directly communicate with the application.  Therefore, if two or more XMMR are placed on the form, each XMMR can communicate with different MMTTY.  However, the following conditions must be met.
+
+- InvokeCommand of all the XMMR controls must have -Z option (e.g., MMTTY.EXT -m -Z).
+- bInitialClose of all the XMMR controls must be False.
+- Only one XMMR control can put True to bNotifyFFT, bNotifyXY, and bNotifyComChange.
+- Send RXM_ENBSHARED message to MMTTY to avoid the shared memory conflict.
+
+  -Z option allows a new instance of MMTTY to start irrespective of the state of MMTTY(s) already running.  If bInitialClose is False, XMMR does not terminate MMTTY already running.  If bNotifyFFT, bNotifyXY, and bNotifyComChange are False, XMMR does not refer to flagFFT, flagXY, comName, or comRadio (related events are not generated).
+  Since only one shared memory exists on the system, MMTTY status properties, such as TxBufLen, the FFT data, and the XY data, must be updated by only one MMTTY.  For this reason, send RXM_ENBSHARED message, which has newly been introduced in MMTTY version 1.64, to every MMTTY.
+
+  This package contains XmmrTwoContainer, which is a sample code for those operations.  XmmrTwoContainer uses two XMMR controls to connect to two MMTTYs.  The characters received in each control are displayed separately in the vertically divided windows.  The sample uses RXM_ENBSHARD message to show the current selected data of the spectrum and XY scope.
+
+* WDM type of soundcard driver allows one or more MMTTY to run simultaneously.
+
+
+MMTTY Version 1.67 or later
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+With MMTTY version 1.67 or later, the shared memory name can be specified by the startup option. Using this option, each MMTTY instance controlled by an XMMR can have independent shared memory.
+
+This is an example of two XMMRs invoking two MMTTY.EXEs, each of which has an independent shared memory.
+
+XMMR1.InvokeCommand = "MMTTY.EXE -m -Z -CMMTTY1"
+XMMR2.InvokeCommand = "MMTTY.EXE -m -Z -CMMTTY2"
+
+- Each XMMR can independently specify bNotifyFFT, bNotifyXY, and bNotifyComChange.
+- You do not have to send the RXM_ENBSHARED message to MMTTY
+
+For your reference, a sample project, XmmrContainer2, is included in this package. Using MMTTY1's and MMTTY2's shared memories, their spectrum scopes and XY scopes are displayed at the same time.
+
+
+==================================
+Predefined constants of XMMR control
+==================================
+  The application can make use of the following constants defined in XMMT.ocx.
+
+typedef enum {		// Remote mode message
+	RXM_HANDLE=0x0000,	// APP -> MMTTY
+	RXM_REQHANDLE,
+	RXM_EXIT,
+	RXM_PTT,
+	RXM_CHAR,
+
+	RXM_WINPOS,
+ 	RXM_WIDTH,
+	RXM_REQPARA,
+	RXM_SETBAUD,
+	RXM_SETMARK,
+
+	RXM_SETSPACE,
+	RXM_SETSWITCH,
+	RXM_SETHAM,
+	RXM_SHOWSETUP,
+	RXM_SETVIEW,
+
+	RXM_SETSQLVL,
+	RXM_SHOW,
+	RXM_SETFIG,
+	RXM_SETRESO,
+	RXM_SETLPF,
+
+	RXM_SETTXDELAY,
+	RXM_UPDATECOM,
+	RXM_SUSPEND,
+	RXM_NOTCH,
+	RXM_PROFILE,
+
+	RXM_TIMER,
+	RXM_ENBFOCUS,	// added on Ver1.63A
+	RXM_SETDEFFREQ,	// added on Ver1.63B
+	RXM_SETLENGTH,	// added on Ver1.63B
+	RXM_ENBSHARED,	// added on Ver1.64
+
+	RXM_PTTFSK,	// added on Ver1.67B
+
+	TXM_HANDLE=0x8000,	// MMTTY -> APP
+	TXM_REQHANDLE,
+	TXM_START,
+	TXM_CHAR,
+	TXM_PTTEVENT,
+
+	TXM_HEIGHT,
+	TXM_BAUD,
+	TXM_MARK,
+	TXM_SPACE,
+	TXM_SWITCH,
+
+	TXM_VIEW,
+	TXM_LEVEL,
+	TXM_FIGEVENT,
+	TXM_RESO,
+	TXM_LPF,
+
+	TXM_THREAD,
+	TXM_PROFILE,
+	TXM_NOTCH,
+	TXM_DEFSHIFT,
+	TXM_RADIOFREQ,	// added on Ver1.63
+
+	TXM_SHOWSETUP,	// added on Ver1.64
+	TXM_SHOWPROFILE,	// added on Ver1.64
+} MMR_MSG;
+typedef enum {		// Index of NMMR struct
+	xr_markfreq,
+	xr_spacefreq,
+	xr_siglevel,
+	xr_sqlevel,
+	xr_codeswitch,
+	xr_codeview,
+	xr_notch1,
+	xr_notch2,
+	xr_baud,
+	xr_fig,
+	xr_radiofreq,
+	xr_Reserved,
+} MMR_NMMR;
+
+
+========
+Epilogue
+========
+   XMMT.ocx and sample codes in this package are all PDS.  I have renounced the copyright.  With your responsibility, you can use and redistribute them for commercial and non-commercial purposes.  You do not have to inform me.
+
+73, Mako

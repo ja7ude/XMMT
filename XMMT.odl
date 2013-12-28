@@ -1,0 +1,655 @@
+// XMMT.odl : ActiveX コントロール プロジェクトのタイプ ライブラリのソース
+
+// このファイルはタイプ ライブラリ (XMMT.tlb) を作成するために
+// タイプ ライブラリ作成ツール (mktyplib) によって処理されます。
+// タイプ ライブラリは XMMT.ocx のリソースになります。
+
+#include <olectl.h>
+#include <idispids.h>
+
+[ uuid(9FAE7EB9-098B-4952-A234-CF460419D752), version(1.0),
+  helpfile("XMMT.hlp"),
+  helpstring("XMMT ActiveX control module"),
+  control ]
+library XMMTLib
+{
+	importlib(STDOLE_TLB);
+	importlib(STDTYPE_TLB);
+
+	typedef enum {		// クライアントへのコマンド
+		TNC_PTTON = 0x00f0,
+		TNC_PTTOFF,
+		TNC_PTTFLUSH,
+		TNC_CLEARBUF,
+		TNC_AFCON,
+		TNC_AFCOFF,
+		TNC_NETON,
+		TNC_NETOFF,
+		TNC_REVON,
+		TNC_REVOFF,
+		TNC_HAM,
+		TNC_ECHOON,
+		TNC_ECHOOFF,
+		TNC_CANCELPTTFLUSH,
+	}MMT_COM;
+	typedef enum {		// MMTTYへのメッセージ
+		MMTMSG_NULL,
+		MMTMSG_CHAR,
+		MMTMSG_PTT,
+		MMTMSG_COMMON,
+		MMTMSG_CLEARFIFO,
+		MMTMSG_SETSWITCH,
+		MMTMSG_SETVIEW,
+		MMTMSG_CHARTXW,
+		MMTMSG_WRITETXW,
+		MMTMSG_SETFREQ,
+		MMTMSG_SETBAUD,
+		MMTMSG_SETSQ,
+		MMTMSG_SETNOTCH,
+		MMTMSG_SETDEFFREQ,
+		MMTMSG_SETPTTTIMER,
+		MMTMSG_SETTNCTYPE,
+		MMTMSG_SETPRIORITY,
+		MMTMSG_SETLENGTH,
+		MMTMSG_SETRESO,
+		MMTMSG_SETLPF,
+	    MMTMSG_GETPROFILENAME,
+		MMTMSG_LOADPROFILE,
+		MMTMSG_SAVEPROFILE,
+	}MMT_MSG;
+	typedef enum {
+		xt_markfreq,
+		xt_spacefreq,
+		xt_siglevel,
+		xt_sqlevel,
+		xt_txbuflen,
+		xt_codeswitch,
+		xt_codeview,
+		xt_notch1,
+		xt_notch2,
+		xt_baud,
+		xt_bitlength,
+		xt_txwlen,
+		xt_sampfreq,
+		xt_demfreq,
+		xt_radiofreq,
+		xt_modetnc,
+		xt_fig,
+		xt_defmark,
+		xt_defshift,
+		xt_Reserved,
+	}MMT_NMMT;
+	typedef enum {
+		ntNOTIFY=1,
+		ntNOTIFYFFT=2,
+		ntNOTIFYXY=4,
+	}MMT_SETNOTIFY;
+
+	//  CXMMTCtrl の最初のディスパッチ インターフェイス
+
+	[ uuid(D38B08E1-B3A1-4FFD-9EC3-8130FBAD3593),
+	  helpstring("XMMT Control dispatch interface"), hidden ]
+	dispinterface _DXMMT
+	{
+		properties:
+			// メモ - ClassWizard はこの位置にプロパティ情報を追加します。
+			//    このセクションの編集は慎重に行ってください。
+			//{{AFX_ODL_PROP(CXMMTCtrl)
+			[id(2)] short wPortTcp;
+			[id(3)] boolean bActive;
+			[id(4)] short wMaxCount;
+			[id(5)] short wCount;
+			[id(6)] BSTR HostName;
+			[id(1)] boolean bFftConversion;
+			//}}AFX_ODL_PROP
+
+		methods:
+			// メモ - ClassWizard はこの位置にメソッド情報を追加します。
+			//    このセクションの編集は慎重に行ってください。
+			//{{AFX_ODL_METHOD(CXMMTCtrl)
+			[id(7)] boolean Listen();
+			[id(8)] boolean SendChar(short nIndex, short bChar);
+			[id(9)] boolean SendCode(short nIndex, short bCode);
+			[id(10)] void SetBusy(short nIndex, short bBusy);
+			[id(11)] boolean SendMmttyMessage(short nIndex, long wParam, long lParam);
+			[id(12)] boolean PostMmttyMessage(short nIndex, long wParam, long lParam);
+			[id(13)] boolean WriteMmttyTxw(short nIndex, BSTR pStr);
+			[id(14)] boolean SetNotify(short nIndex, short bNotify);
+			[id(15)] boolean IsConnected(short nIndex);
+			[id(16)] void Disconnect(short nIndex);
+			[id(17)] boolean IsBusy(short nIndex);
+			[id(18)] boolean SendString(short nIndex, BSTR pStr, short nLen);
+			[id(19)] BSTR GetAddress(short nIndex);
+			[id(20)] boolean PostMmttyMessageAsString(short nIndex, long wParam, BSTR pStr);
+			//}}AFX_ODL_METHOD
+	};
+
+	//  CXMMTCtrl のイベント ディスパッチ インターフェイス
+
+	[ uuid(39642706-D45B-46A9-9685-C7436DF56138),
+	  helpstring("Event interface for XMMT Control") ]
+	dispinterface _DXMMTEvents
+	{
+		properties:
+			//  イベント インターフェイスにプロパティはありません
+
+		methods:
+			// メモ - ClassWizard はこの位置にイベント情報を追加します。
+			//    このセクションの編集は慎重におこなってください。
+			//{{AFX_ODL_EVENT(CXMMTCtrl)
+			[id(1)] void OnPttEvent(short nIndex, short btx);
+			[id(2)] void OnBusyEvent(short nIndex, short bBusy);
+			[id(3)] void OnDisconnected(short nIndex);
+			[id(4)] void OnCharRcvd(short nIndex, short bChar);
+			[id(5)] void OnConnected(short nIndex);
+			[id(6)] void OnMessageResult(short nIndex, long wParam, long lParam, long lResult);
+			[id(7)] void OnNotifyNMMT(short nIndex, long* pNMMT);
+			[id(8)] void OnNotifyXY(short nIndex, long* pXY);
+			[id(9)] void OnNotifyFFT(short nIndex, short* pFFT, short size, short sampfreq);
+			[id(10)] void OnGetProfileName(short nIndex, short nProfile, BSTR pStr);
+			//}}AFX_ODL_EVENT
+	};
+
+	//  CXMMTCtrl のクラス情報
+
+	[ uuid(9AE88AC4-3C6D-41BA-B116-84792514E438),
+	  helpstring("XMMT Control"), control ]
+	coclass XMMT
+	{
+		[default] dispinterface _DXMMT;
+		[default, source] dispinterface _DXMMTEvents;
+	};
+
+	//  CXMMXYCtrl の最初のディスパッチ インターフェイス
+
+	[ uuid(BFF74B5E-A2D0-4865-823E-0F91CA52EA7A),
+	  helpstring("XMMXY Control dispatch interface"), hidden ]
+	dispinterface _DXMMXY
+	{
+		properties:
+			// メモ - ClassWizard はこの位置にプロパティ情報を追加します。
+			//    このセクションの編集は慎重に行ってください。
+			//{{AFX_ODL_PROP(CXMMXYCtrl)
+			[id(3)] OLE_COLOR BackColor;
+			[id(4)] OLE_COLOR Color;
+			[id(5)] boolean HighQuality;
+			[id(6)] short DemSampleFreq;
+			[id(1)] boolean Invert;
+			[id(DISPID_BORDERSTYLE), bindable, requestedit] short BorderStyle;
+			[id(2)] boolean Visible;
+			[id(DISPID_HWND), bindable, requestedit] OLE_HANDLE hwnd;
+			//}}AFX_ODL_PROP
+
+		methods:
+			// メモ - ClassWizard はこの位置にメソッド情報を追加します。
+			//    このセクションの編集は慎重に行ってください。
+			//{{AFX_ODL_METHOD(CXMMXYCtrl)
+			[id(7)] void Draw(long* pXY);
+			[id(8)] void Clear();
+			//}}AFX_ODL_METHOD
+	};
+
+	//  CXMMXYCtrl のイベント ディスパッチ インターフェイス
+
+	[ uuid(15FE58B4-5152-4E06-B6E7-B5C2D40AF884),
+	  helpstring("Event interface for XMMXY Control") ]
+	dispinterface _DXMMXYEvents
+	{
+		properties:
+			//  イベント インターフェイスにプロパティはありません
+
+		methods:
+			// メモ - ClassWizard はこの位置にイベント情報を追加します。
+			//    このセクションの編集は慎重におこなってください。
+			//{{AFX_ODL_EVENT(CXMMXYCtrl)
+			[id(1)] void OnLButtonClick(short X, short Y);
+			[id(2)] void OnRButtonClick(short X, short Y);
+			//}}AFX_ODL_EVENT
+	};
+
+	//  CXMMXYCtrl のクラス情報
+
+	[ uuid(964DCB7F-A8E7-407F-A689-26696BC18478),
+	  helpstring("XMMXY Control"), control ]
+	coclass XMMXY
+	{
+		[default] dispinterface _DXMMXY;
+		[default, source] dispinterface _DXMMXYEvents;
+	};
+
+	//  CXMMBtnCtrl の最初のディスパッチ インターフェイス
+
+	[ uuid(F5BF613F-D4BC-4582-80E5-2F5E5B31F82E),
+	  helpstring("XMMBtn Control dispatch interface"), hidden ]
+	dispinterface _DXMMBtn
+	{
+		properties:
+			// メモ - ClassWizard はこの位置にプロパティ情報を追加します。
+			//    このセクションの編集は慎重に行ってください。
+			//{{AFX_ODL_PROP(CXMMBtnCtrl)
+			[id(2)] BSTR Caption;
+			[id(3)] OLE_COLOR TextColor;
+			[id(4)] boolean Enabled;
+			[id(5)] boolean State;
+			[id(6)] boolean Toggled;
+			[id(7)] OLE_COLOR FaceColor;
+			[id(DISPID_FONT), bindable] IFontDisp* Font;
+			[id(1)] boolean Visible;
+			[id(DISPID_HWND), bindable, requestedit] OLE_HANDLE hwnd;
+			//}}AFX_ODL_PROP
+
+		methods:
+			// メモ - ClassWizard はこの位置にメソッド情報を追加します。
+			//    このセクションの編集は慎重に行ってください。
+			//{{AFX_ODL_METHOD(CXMMBtnCtrl)
+			//}}AFX_ODL_METHOD
+	};
+
+	//  CXMMBtnCtrl のイベント ディスパッチ インターフェイス
+
+	[ uuid(C3DECF69-C3BC-427C-9CF3-4BE61AAE9EFF),
+	  helpstring("Event interface for XMMBtn Control") ]
+	dispinterface _DXMMBtnEvents
+	{
+		properties:
+			//  イベント インターフェイスにプロパティはありません
+
+		methods:
+			// メモ - ClassWizard はこの位置にイベント情報を追加します。
+			//    このセクションの編集は慎重におこなってください。
+			//{{AFX_ODL_EVENT(CXMMBtnCtrl)
+			[id(1)] void OnLButtonClick();
+			[id(2)] void OnRButtonClick();
+			[id(DISPID_DBLCLICK)] void DblClick();
+			//}}AFX_ODL_EVENT
+	};
+
+	//  CXMMBtnCtrl のクラス情報
+
+	[ uuid(34104A6C-B355-43E0-BBD1-9A7718AB0D4C),
+	  helpstring("XMMBtn Control"), control ]
+	coclass XMMBtn
+	{
+		[default] dispinterface _DXMMBtn;
+		[default, source] dispinterface _DXMMBtnEvents;
+	};
+
+	//  CXMMLvlCtrl の最初のディスパッチ インターフェイス
+
+	[ uuid(E05FF165-5785-446E-B2E6-6E9E7E324DC1),
+	  helpstring("XMMLvl Control 用ﾃﾞｨｽﾊﾟｯﾁ ｲﾝﾀｰﾌｪｲｽ"), hidden ]
+	dispinterface _DXMMLvl
+	{
+		properties:
+			// メモ - ClassWizard はこの位置にプロパティ情報を追加します。
+			//    このセクションの編集は慎重に行ってください。
+			//{{AFX_ODL_PROP(CXMMLvlCtrl)
+			[id(2)] OLE_COLOR OnColor;
+			[id(3)] OLE_COLOR OffColor;
+			[id(4)] OLE_COLOR BackColor;
+			[id(5)] OLE_COLOR LineColor;
+			[id(DISPID_BORDERSTYLE), bindable, requestedit] short BorderStyle;
+			[id(1)] boolean Visible;
+			[id(DISPID_HWND), bindable, requestedit] OLE_HANDLE hwnd;
+			//}}AFX_ODL_PROP
+
+		methods:
+			// メモ - ClassWizard はこの位置にメソッド情報を追加します。
+			//    このセクションの編集は慎重に行ってください。
+			//{{AFX_ODL_METHOD(CXMMLvlCtrl)
+			[id(6)] void Draw(short sig, short sq);
+			[id(7)] void DrawByNMMT(long* pNMMT);
+			[id(8)] void Clear();
+			[id(9)] void DrawByNMMR(long* pNMMR);
+			//}}AFX_ODL_METHOD
+	};
+
+	//  CXMMLvlCtrl のイベント ディスパッチ インターフェイス
+
+	[ uuid(8973D8D1-D0B0-4E4A-88BC-827E38324558),
+	  helpstring("Event interface for XMMLvl Control") ]
+	dispinterface _DXMMLvlEvents
+	{
+		properties:
+			//  イベント インターフェイスにプロパティはありません
+
+		methods:
+			// メモ - ClassWizard はこの位置にイベント情報を追加します。
+			//    このセクションの編集は慎重におこなってください。
+			//{{AFX_ODL_EVENT(CXMMLvlCtrl)
+			[id(1)] void OnLMouseDown(short level);
+			[id(2)] void OnLMouseUp(short level);
+			[id(3)] void OnLMouseMove(short level);
+			[id(4)] void OnRMouseDown(short level);
+			[id(5)] void OnRMouseUp(short level);
+			[id(6)] void OnRMouseMove(short level);
+			//}}AFX_ODL_EVENT
+	};
+
+	//  CXMMLvlCtrl のクラス情報
+
+	[ uuid(306B30AD-3ABE-4F84-A8B6-323095070635),
+	  helpstring("XMMLvl Control"), control ]
+	coclass XMMLvl
+	{
+		[default] dispinterface _DXMMLvl;
+		[default, source] dispinterface _DXMMLvlEvents;
+	};
+
+	//  CXMMSpecCtrl の最初のディスパッチ インターフェイス
+
+	[ uuid(825B17E6-DC7B-40C4-B03B-39793CA9DF06),
+	  helpstring("XMMSpec Control 用ﾃﾞｨｽﾊﾟｯﾁ ｲﾝﾀｰﾌｪｲｽ"), hidden ]
+	dispinterface _DXMMSpec
+	{
+		properties:
+			// メモ - ClassWizard はこの位置にプロパティ情報を追加します。
+			//    このセクションの編集は慎重に行ってください。
+			//{{AFX_ODL_PROP(CXMMSpecCtrl)
+			[id(DISPID_FONT), bindable] IFontDisp* Font;
+			[id(4)] short Notch1;
+			[id(5)] short Notch2;
+			[id(1)] boolean bShowValue;
+			[id(6)] short BaseFreq;
+			[id(7)] short WidthFreq;
+			[id(8)] short MarkFreq;
+			[id(9)] short SpaceFreq;
+			[id(2)] boolean bShowLimiter;
+			[id(10)] OLE_COLOR BackColor;
+			[id(11)] OLE_COLOR MarkerColor;
+			[id(12)] OLE_COLOR SpectramColor;
+			[id(13)] OLE_COLOR LimiterColor;
+			[id(DISPID_BORDERSTYLE), bindable, requestedit] short BorderStyle;
+			[id(3)] boolean Visible;
+			[id(DISPID_HWND), bindable, requestedit] OLE_HANDLE hwnd;
+			//}}AFX_ODL_PROP
+
+		methods:
+			// メモ - ClassWizard はこの位置にメソッド情報を追加します。
+			//    このセクションの編集は慎重に行ってください。
+			//{{AFX_ODL_METHOD(CXMMSpecCtrl)
+			[id(14)] void Draw(short* pFFT, short size, short sampfreq);
+			[id(15)] void Clear();
+			[id(16)] void UpdateByNMMT(long* pNMMT);
+			[id(17)] void UpdateByNMMR(long* pNMMR);
+			//}}AFX_ODL_METHOD
+	};
+
+	//  CXMMSpecCtrl のイベント ディスパッチ インターフェイス
+
+	[ uuid(7AE508F5-0E62-491E-B023-214C1B0065E0),
+	  helpstring("Event interface for XMMSpec Control") ]
+	dispinterface _DXMMSpecEvents
+	{
+		properties:
+			//  イベント インターフェイスにプロパティはありません
+
+		methods:
+			// メモ - ClassWizard はこの位置にイベント情報を追加します。
+			//    このセクションの編集は慎重におこなってください。
+			//{{AFX_ODL_EVENT(CXMMSpecCtrl)
+			[id(1)] void OnLMouseDown(short freq);
+			[id(2)] void OnLMouseMove(short freq);
+			[id(3)] void OnLMouseUp(short freq);
+			[id(4)] void OnRMouseDown(short freq);
+			[id(5)] void OnRMouseUp(short freq);
+			[id(6)] void OnRMouseMove(short freq);
+			//}}AFX_ODL_EVENT
+	};
+
+	//  CXMMSpecCtrl のクラス情報
+
+	[ uuid(9614C387-73AA-4A07-8FC6-7C407DAB017C),
+	  helpstring("XMMSpec Control"), control ]
+	coclass XMMSpec
+	{
+		[default] dispinterface _DXMMSpec;
+		[default, source] dispinterface _DXMMSpecEvents;
+	};
+
+	//  CXMMWaterCtrl の最初のディスパッチ インターフェイス
+
+	[ uuid(EEBEEE03-7B8C-4817-A28B-6085445F80B0),
+	  helpstring("XMMWater Control 用ﾃﾞｨｽﾊﾟｯﾁ ｲﾝﾀｰﾌｪｲｽ"), hidden ]
+	dispinterface _DXMMWater
+	{
+		properties:
+			// メモ - ClassWizard はこの位置にプロパティ情報を追加します。
+			//    このセクションの編集は慎重に行ってください。
+			//{{AFX_ODL_PROP(CXMMWaterCtrl)
+			[id(2)] OLE_COLOR BackColor;
+			[id(3)] OLE_COLOR SpectramColor;
+			[id(4)] short BaseFreq;
+			[id(5)] short WidthFreq;
+			[id(DISPID_BORDERSTYLE), bindable, requestedit] short BorderStyle;
+			[id(1)] boolean Visible;
+			[id(DISPID_HWND), bindable, requestedit] OLE_HANDLE hwnd;
+			//}}AFX_ODL_PROP
+
+		methods:
+			// メモ - ClassWizard はこの位置にメソッド情報を追加します。
+			//    このセクションの編集は慎重に行ってください。
+			//{{AFX_ODL_METHOD(CXMMWaterCtrl)
+			[id(6)] void Draw(short* pFFT, short size, short sampfreq);
+			[id(7)] void Clear();
+			//}}AFX_ODL_METHOD
+	};
+
+	//  CXMMWaterCtrl のイベント ディスパッチ インターフェイス
+
+	[ uuid(7FE82F53-2389-4078-A4DF-DA9E853393BE),
+	  helpstring("Event interface for XMMWater Control") ]
+	dispinterface _DXMMWaterEvents
+	{
+		properties:
+			//  イベント インターフェイスにプロパティはありません
+
+		methods:
+			// メモ - ClassWizard はこの位置にイベント情報を追加します。
+			//    このセクションの編集は慎重におこなってください。
+			//{{AFX_ODL_EVENT(CXMMWaterCtrl)
+			[id(1)] void OnLMouseDown(short freq);
+			[id(2)] void OnLMouseUp(short freq);
+			[id(3)] void OnLMouseMove(short freq);
+			[id(4)] void OnRMouseDown(short freq);
+			[id(5)] void OnRMouseMove(short freq);
+			[id(6)] void OnRMouseUp(short freq);
+			//}}AFX_ODL_EVENT
+	};
+
+	//  CXMMWaterCtrl のクラス情報
+
+	[ uuid(68ED648D-FF56-43FB-BEE9-EE9083058B8A),
+	  helpstring("XMMWater Control"), control ]
+	coclass XMMWater
+	{
+		[default] dispinterface _DXMMWater;
+		[default, source] dispinterface _DXMMWaterEvents;
+	};
+
+
+	typedef enum {
+		RXM_HANDLE=0x0000,	// APP -> MMTTY
+		RXM_REQHANDLE,
+		RXM_EXIT,
+		RXM_PTT,
+		RXM_CHAR,
+
+		RXM_WINPOS,
+		RXM_WIDTH,
+		RXM_REQPARA,
+		RXM_SETBAUD,
+		RXM_SETMARK,
+
+		RXM_SETSPACE,
+		RXM_SETSWITCH,
+		RXM_SETHAM,
+		RXM_SHOWSETUP,
+		RXM_SETVIEW,
+
+		RXM_SETSQLVL,
+		RXM_SHOW,
+		RXM_SETFIG,
+		RXM_SETRESO,
+		RXM_SETLPF,
+
+		RXM_SETTXDELAY,
+		RXM_UPDATECOM,
+		RXM_SUSPEND,
+		RXM_NOTCH,
+		RXM_PROFILE,
+
+		RXM_TIMER,
+		RXM_ENBFOCUS,	// added on Ver1.63A
+		RXM_SETDEFFREQ,	// added on Ver1.63B
+		RXM_SETLENGTH,	// added on Ver1.63B
+		RXM_ENBSHARED,	// added on Ver1.64
+
+		RXM_PTTFSK,		// added on Ver1.67B
+	//--------------------------------------
+		TXM_HANDLE=0x8000,	// MMTTY -> APP
+		TXM_REQHANDLE,
+		TXM_START,
+		TXM_CHAR,
+		TXM_PTTEVENT,
+
+		TXM_HEIGHT,
+		TXM_BAUD,
+		TXM_MARK,
+		TXM_SPACE,
+		TXM_SWITCH,
+
+		TXM_VIEW,
+		TXM_LEVEL,
+		TXM_FIGEVENT,
+		TXM_RESO,
+		TXM_LPF,
+
+		TXM_THREAD,
+		TXM_PROFILE,
+		TXM_NOTCH,
+		TXM_DEFSHIFT,
+		TXM_RADIOFREQ,	// added on Ver1.63
+
+	    TXM_SHOWSETUP,	// added on Ver1.64
+		TXM_SHOWPROFILE,// added on Ver1.64
+	}MMR_MSG;
+	typedef enum {
+		xr_markfreq,
+		xr_spacefreq,
+		xr_siglevel,
+		xr_sqlevel,
+		xr_codeswitch,
+		xr_codeview,
+		xr_notch1,
+		xr_notch2,
+		xr_baud,
+    	xr_fig,
+		xr_radiofreq,
+		xr_Reserved,
+	}MMR_NMMR;
+
+	//  CXMMRCtrl の最初のディスパッチ インターフェイス
+
+	//  CXMMRCtrl の最初のディスパッチ インターフェイス
+
+	[ uuid(D721E49E-6EB1-4A51-AD84-61155FCE29B4),
+	  helpstring("XMMR Control 用ﾃﾞｨｽﾊﾟｯﾁ ｲﾝﾀｰﾌｪｲｽ"), hidden ]
+	dispinterface _DXMMR
+	{
+		properties:
+			// メモ - ClassWizard はこの位置にプロパティ情報を追加します。
+			//    このセクションの編集は慎重に行ってください。
+			//{{AFX_ODL_PROP(CXMMRCtrl)
+			[id(10)] boolean bActive;
+			[id(11)] BSTR InvokeCommand;
+			[id(12)] long TxBufLen;
+			[id(13)] BSTR ComName;
+			[id(14)] BSTR Title;
+			[id(15)] BSTR RadioName;
+			[id(16)] long smpFreq;
+			[id(17)] long smpFFT;
+			[id(18)] BSTR verMMTTY;
+			[id(19)] long LostSound;
+			[id(20)] long OverFlow;
+			[id(21)] long ErrorClock;
+			[id(22)] long smpDemFreq;
+			[id(23)] boolean PTT;
+			[id(9)] boolean Visible;
+			[id(24)] OLE_HANDLE hWndMmtty;
+			[id(DISPID_HWND), bindable, requestedit] OLE_HANDLE hwnd;
+			[id(25)] boolean bInvoking;
+			[id(26)] long SharedPointer;
+			[id(27)] boolean VisibleMmtty;
+			[id(1)] boolean bRemoveUselessMessage;
+			[id(2)] boolean bTranslateAllMessages;
+			[id(3)] boolean bInitialClose;
+			[id(4)] long DelayInvoke;
+			[id(5)] boolean bNotifyComChange;
+			[id(6)] boolean bConfirmClose;
+			[id(7)] boolean bNotifyXY;
+			[id(8)] boolean bNotifyFFT;
+			//}}AFX_ODL_PROP
+
+		methods:
+			// メモ - ClassWizard はこの位置にメソッド情報を追加します。
+			//    このセクションの編集は慎重に行ってください。
+			//{{AFX_ODL_METHOD(CXMMRCtrl)
+			[id(28)] boolean PostMmttyMessage(long wParam, long lParam);
+			[id(29)] boolean SetMmttySwitch(long codeswitch);
+			[id(30)] boolean SetMmttyView(long codeview);
+			[id(31)] boolean SetMmttyPTT(short ptt);
+			[id(32)] boolean SendChar(short bChar);
+			[id(33)] boolean SendString(BSTR pStr);
+			[id(35), propget] BSTR Profiles(short nIndex);
+			[id(35), propput] void Profiles(short nIndex, BSTR lpszNewValue);
+			[id(34)] void ReadNMMR(long* pNMMR);
+			//}}AFX_ODL_METHOD
+	};
+
+	//  CXMMRCtrl のイベント ディスパッチ インターフェイス
+
+	[ uuid(527A76C5-3C2D-4D68-99EC-B4D2F53CAE74),
+	  helpstring("Event interface for XMMR Control") ]
+	dispinterface _DXMMREvents
+	{
+		properties:
+			//  イベント インターフェイスにプロパティはありません
+
+		methods:
+			// メモ - ClassWizard はこの位置にイベント情報を追加します。
+			//    このセクションの編集は慎重におこなってください。
+			//{{AFX_ODL_EVENT(CXMMRCtrl)
+			[id(1)] void OnConnected();
+			[id(2)] void OnCharRcvd(short bChar);
+			[id(3)] void OnPttEvent(short btx);
+			[id(4)] void OnDisconnected(short status);
+			[id(5)] void OnNotifyNMMR(long* pNMMR);
+			[id(6)] void OnNotchChanged(short notch1, short notch2);
+			[id(7)] void OnViewChanged(long codeview);
+			[id(8)] void OnSwitchChanged(long codeswitch);
+			[id(9)] void OnFreqChanged(short markfreq, short spacefreq);
+			[id(10)] void OnBaudChanged(short baud);
+			[id(11)] void OnNotifyFFT(short* pFFT, short size, short sampfreq);
+			[id(12)] void OnNotifyXY(long* pXY);
+			[id(13)] void OnRadioFreqChanged(long freq);
+			[id(14)] void OnRadioNameChanged(BSTR pStrRadio);
+			[id(15)] void OnComNameChanged(BSTR pStrCom);
+			[id(16)] void OnFigChanged(short bFig);
+			[id(17)] void OnTranslateMessage(long wParam, long lParam);
+			//}}AFX_ODL_EVENT
+	};
+
+	//  CXMMRCtrl のクラス情報
+
+	[ uuid(DC25FBE7-50BA-469E-8A5D-4FA3488D6E0C),
+	  helpstring("XMMR Control"), control ]
+	coclass XMMR
+	{
+		[default] dispinterface _DXMMR;
+		[default, source] dispinterface _DXMMREvents;
+	};
+
+	//{{AFX_APPEND_ODL}}
+	//}}AFX_APPEND_ODL}}
+};
